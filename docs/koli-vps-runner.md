@@ -172,6 +172,36 @@ gcloud auth activate-service-account --key-file=/tmp/firebase-service-account.js
 gcloud services list --enabled --project=mimetic-science-406407 | grep -E "toolresults|testing"
 ```
 
+### 5. Firebase Test Lab - Robo Login Script
+
+To make Robo test use real login credentials, the workflow now includes a **logged-in Robo test** step that passes a `TestLabLogin.robo` script.
+
+**Script location:** `scripts/TestLabLogin.robo` in the repo
+**Credentials in script (hardcoded):** `koliapp2019@gmail.com` / `koliapp2019`
+
+**How the workflow is structured:**
+- **Guest Robo** (5 min timeout) — explores the app without logging in
+- **Logged-In Robo** (10 min timeout) — executes the login script first, then explores after auth
+- Results are saved in separate directories (`guest/` vs `logged-in/`) within the artifact zip
+
+**To update credentials:** Edit `scripts/TestLabLogin.robo` and commit to `rn0831`.
+
+**Note:** React Native apps render UI via JavaScript, so resource IDs aren't native Android `R.id.*` values. The robo script uses text-based selectors (`resourceName` matching text hints). If the login screen layout changes, the script may need updates.
+
+### 6. Testing iOS
+
+Firebase Test Lab **does not support iOS app testing** (it only runs Android virtual/physical devices).
+
+For iOS testing on this project:
+- **Codemagic** builds the iOS app already (via `codemagic.yaml`)
+- iOS devices only run tests on **macOS** (Xcode required)
+- Options for iOS automated testing:
+  1. **Add iOS device tests to Codemagic workflow** — Codemagic can run XCTests/XCUITests on real iOS devices after each build
+  2. **BrowserStack / Sauce Labs / AWS Device Farm** — cloud iOS device testing services (paid)
+  3. **GitHub Actions macOS runner** — could use a self-hosted macOS runner with Xcode installed
+
+**Recommended approach:** Add an iOS smoke test step to Codemagic's `react-native-ios` workflow using their built-in device testing.
+
 ## Workflow History
 
 | Run # | Result | Issue |
@@ -184,7 +214,10 @@ gcloud services list --enabled --project=mimetic-science-406407 | grep -E "toolr
 | 8 | ✅ Build / ❌ Firebase | Build succeeded; Cloud Testing API disabled |
 | 9 | ✅ Build / ❌ Firebase | Cloud Testing API enabled; deprecated Pixel2 device |
 | 10 | ✅ Build / ❌ Firebase | Device fixed; billing / Tool Results API needed |
-| 11 | ? | |
+| 11 | ❌ | Short-lived; probably tool-results |
+| 12 | ❌ Firebase | Build ok; APK relative path issue |
+| 13-14 | — | Test runs from corrupted workflow (blank file) |
+| 15 | ✅ All | First full green run |
 
 ## GitHub Token
 
