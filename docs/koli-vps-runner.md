@@ -1,3 +1,14 @@
+## ⚠️ CRITICAL: Do Not Re-trigger Workflows
+
+**NEVER trigger a new workflow run on the same branch while one is already in progress.** The self-hosted runner can only run one job at a time. Each new dispatch cancels the previous in-progress run, wasting 45+ minutes of build time.
+
+- Build takes ~30 minutes (Gradle + CMake for native modules)
+- Firebase Test Lab tests take ~10-15 minutes
+- Total: ~45-60 minutes per run
+- The workflow has NO `concurrency` / `cancel-in-progress` setting
+
+**Rule:** Before dispatching a new run, check if one is already running. If it is, wait for it to finish.
+
 # koli-co Self-Hosted GitHub Actions Runner
 
 ## Overview
