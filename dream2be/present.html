@@ -513,6 +513,13 @@
 
       const textHtml = formatText(dream.text);
 
+      const metaHtml = isDebug ? `
+        <div class="dream-meta">
+          <span class="dream-time" data-timestamp="${dream.timestamp}">${timeAgo(dream.timestamp)}</span>
+          <span class="dream-id">#${dream.id}</span>
+        </div>
+      ` : '';
+
       card.innerHTML = `
         <div class="card-row">
           <div class="card-icon glow-icon" style="
@@ -527,10 +534,7 @@
             ${textHtml}
           </div>
         </div>
-        <div class="dream-meta">
-          <span class="dream-time" data-timestamp="${dream.timestamp}">${timeAgo(dream.timestamp)}</span>
-          <span class="dream-id">#${dream.id}</span>
-        </div>
+        ${metaHtml}
         ${debugHtml}
       `;
 
