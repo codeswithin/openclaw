@@ -45,7 +45,14 @@ io.on('connection', (socket) => {
     });
   });
   socket.on('dream', (data) => {
-    const dream = { id: ++dreamIdCounter, text: (data.text || '').trim().split(/\s+/).filter(w => w.length > 0).slice(0, 20).join(' '), emoji: data.emoji || '✨', timestamp: Date.now(), votes: 0 };
+    let text = (data.text || '').trim();
+    const words = text.split(/\s+/).filter(w => w.length > 0);
+    if (words.length > 20) {
+      // Truncate to 20 words preserving newlines
+      const parts = text.match(/\S+\s*/g) || [];
+      text = parts.slice(0, 20).join('').trim();
+    }
+    const dream = { id: ++dreamIdCounter, text, emoji: data.emoji || '✨', timestamp: Date.now(), votes: 0 };
     if (!dream.text) return;
     dreamHistory.push(dream);
     if (dreamHistory.length > MAX_DREAMS) dreamHistory.shift();

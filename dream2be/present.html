@@ -60,70 +60,119 @@
     .header .status-dot.offline { background: #444; animation: none; }
 
 
-    /* ── Dream Wall (tile flow) ── */
+    /* ── Dream Wall — Vision Board ── */
     .dream-wall {
       width: 100%;
+      max-width: 800px;
+      margin: 0 auto;
       position: relative;
       z-index: 2;
       min-height: 60vh;
       display: flex;
-      flex-wrap: wrap;
-      align-content: flex-start;
-      gap: 10px;
-      padding: 0 4px;
+      flex-direction: column;
+      align-items: center;
+      gap: 28px;
+      padding: 20px 10px 60px;
     }
 
+    /* Vision Card — each dream appears as a glowing vision-board element */
     .dream-card {
-      background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 14px;
-      padding: 14px 16px 12px;
-      backdrop-filter: blur(10px);
-      animation: cardIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+      width: 100%;
+      max-width: 500px;
+      padding: 28px 24px 20px;
+      border-radius: 20px;
+      position: relative;
+      animation: visionIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
       opacity: 0;
-      transform: translateY(20px);
+      transform: translateY(30px) scale(0.95);
+      transition: all 0.4s;
+    }
+
+    /* Outer glow ring */
+    .dream-card::before {
+      content: '';
+      position: absolute;
+      inset: -2px;
+      border-radius: 22px;
+      opacity: 0.5;
+      z-index: -1;
+      transition: opacity 0.5s;
+    }
+
+    /* Glow inner */
+    .dream-card::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 20px;
+      z-index: -1;
+      transition: opacity 0.5s;
+    }
+
+    @keyframes visionIn {
+      0% { opacity: 0; transform: translateY(30px) scale(0.95); }
+      60% { opacity: 1; transform: translateY(-4px) scale(1.01); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* ── Card layout ── */
+    .card-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+    }
+
+    .card-icon {
       flex-shrink: 0;
-      max-width: 90%;
-      transition: background 0.3s;
-    }
-    .dream-card:hover {
-      background: rgba(255,255,255,0.07);
+      width: 52px;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      border-radius: 14px;
+      transition: box-shadow 0.4s;
     }
 
-    @keyframes cardIn {
-      to { opacity: 1; transform: translateY(0); }
+    .card-icon.glow-icon {
+      box-shadow: 0 0 20px 6px rgba(255,255,255,0.15);
     }
 
-    .dream-card .dream-emoji {
-      font-size: 22px;
-      margin-bottom: 4px;
+    .card-content {
+      flex: 1;
+      min-width: 0;
     }
-    .dream-card .dream-text {
-      font-size: 17px;
-      line-height: 1.5;
-      color: rgba(255,255,255,0.85);
-      font-weight: 400;
-      word-break: break-word;
-    }
-    .dream-card .dream-text .word-pair {
-      display: inline-block;
-      margin-right: 6px;
+
+    .card-content .card-line {
+      display: block;
+      font-weight: 600;
+      line-height: 1.4;
+      padding: 2px 0;
       margin-bottom: 2px;
+      transition: text-shadow 0.4s;
     }
+
+    /* Each line of text gets its own glow */
+    .card-line.glow-text {
+      text-shadow: 0 0 12px currentColor;
+    }
+
     .dream-card .dream-meta {
       display: flex;
       gap: 8px;
       align-items: center;
-      margin-top: 6px;
+      margin-top: 10px;
+      padding-left: 68px; /* align with text under icon */
     }
     .dream-card .dream-time {
-      font-size: 11px;
-      color: rgba(255,255,255,0.2);
+      font-size: 10px;
+      color: rgba(255,255,255,0.15);
       letter-spacing: 0.5px;
+      font-family: monospace;
     }
     .dream-card .dream-id {
-      font-size: 10px;
-      color: rgba(255,255,255,0.1);
+      font-size: 9px;
+      color: rgba(255,255,255,0.08);
       font-family: monospace;
     }
 
@@ -155,15 +204,15 @@
       color: rgba(255,180,80,0.5);
       font-family: monospace;
       letter-spacing: 0.3px;
-      margin-top: 4px;
+      margin-top: 2px;
     }
     .debug-id {
-      font-size: 24px;
+      font-size: 18px;
       font-weight: 700;
-      color: rgba(255,200,150,0.15);
+      color: rgba(255,200,150,0.12);
       position: absolute;
-      top: 8px;
-      right: 12px;
+      top: 6px;
+      right: 10px;
       font-family: monospace;
       line-height: 1;
     }
@@ -171,11 +220,27 @@
       position: relative;
     }
 
+    /* ── Floating dot decorations (tiny star-like accents around the wall) ── */
+    .dot-deco {
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.6;
+    }
+
+    @keyframes floatDrift {
+      0%, 100% { transform: translate(0, 0); }
+      50% { transform: translate(4px, -6px); }
+    }
+
     /* ── Responsive ── */
     @media (max-width: 480px) {
-      .dream-card { padding: 16px 18px; }
-      .dream-card .dream-text { font-size: 17px; }
+      .dream-card { padding: 22px 18px 16px; }
       .header h1 { font-size: 18px; }
+      .card-icon { width: 44px; height: 44px; font-size: 26px; }
+      .card-content .card-line { font-size: 15px; }
+      .dream-card .dream-meta { padding-left: 60px; }
     }
   </style>
 </head>
@@ -371,11 +436,6 @@
     const liveCountEl = document.getElementById('liveCount');
     const MAX_VISIBLE = 50;
 
-    const emojiMap = {
-      '✨':'✨','🌟':'🌟','💫':'💫','⭐':'⭐','🔥':'🔥',
-      '🌙':'🌙','🕯️':'🕯️','💭':'💭','🌈':'🌈','❤️':'❤️'
-    };
-
     const isDebug = location.search.includes('debug');
 
     function formatTimestamp(ts) {
@@ -384,15 +444,18 @@
         '.' + String(d.getMilliseconds()).padStart(3, '0');
     }
 
-    // Format text: max 20 words, 2 words per line
+    // Generate a color palette (bg, text glow, border) from dream text
+    function dreamColor(text) {
+      let h = 0;
+      for (let i = 0; i < text.length; i++) h = text.charCodeAt(i) + ((h << 5) - h);
+      const hues = [200, 220, 260, 290, 40, 50, 340, 15, 30, 35, 180, 120];
+      return hues[Math.abs(h) % hues.length];
+    }
+
+    // Escape HTML and render newlines as <br>
     function formatText(text) {
-      const words = text.trim().split(/\s+/).filter(w => w.length > 0).slice(0, 20);
-      let html = '';
-      for (let i = 0; i < words.length; i += 2) {
-        const pair = words.slice(i, i + 2).join(' ');
-        html += `<span class="word-pair">${pair}</span>`;
-      }
-      return html;
+      const escaped = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+      return escaped.split('\n').map(line => `<span class="card-line glow-text">${line}</span>`).join('');
     }
 
     let clockOffset = 0; // serverTime - clientTime
@@ -416,10 +479,29 @@
 
       const card = document.createElement('div');
       card.className = 'dream-card' + (isDebug ? ' debug-mode' : '');
-      card.style.animationDelay = '0s';
 
-      const emoji = emojiMap[dream.emoji] || '✨';
-      const now = Date.now() + clockOffset;
+      // Generate dream color
+      const hue = dreamColor(dream.text);
+      const sat = 75;
+      const light = 65;
+      const bgLight = 8;
+      const glowColor = `hsla(${hue}, ${sat}%, ${light}%, 0.4)`;
+      const softGlow = `hsla(${hue}, ${sat}%, ${light}%, 0.15)`;
+      const bgGlow = `hsla(${hue}, ${sat}%, ${light}%, 0.06)`;
+      const borderColor = `hsla(${hue}, ${sat}%, ${light}%, 0.15)`;
+
+      // Apply inline styles for color
+      card.style.background = `linear-gradient(135deg, ${bgGlow}, rgba(255,255,255,0.02))`;
+      card.style.border = `1px solid ${borderColor}`;
+      card.style.backdropFilter = 'blur(8px)';
+
+      // Glow via pseudo-elements (set via custom property or inline box-shadow)
+      card.style.boxShadow = `
+        0 0 30px 4px ${softGlow},
+        inset 0 0 20px 2px ${bgGlow}
+      `;
+
+      const emoji = dream.emoji || '✨';
 
       let debugHtml = '';
       if (isDebug) {
@@ -429,9 +511,22 @@
         `;
       }
 
+      const textHtml = formatText(dream.text);
+
       card.innerHTML = `
-        <div class="dream-emoji">${emoji}</div>
-        <div class="dream-text">${formatText(dream.text)}</div>
+        <div class="card-row">
+          <div class="card-icon glow-icon" style="
+            background: ${bgGlow};
+            color: hsl(${hue}, ${sat}%, ${light}%);
+            box-shadow: 0 0 24px 6px ${softGlow};
+            border: 1px solid ${borderColor};
+          ">${emoji}</div>
+          <div class="card-content" style="color: hsl(${hue}, ${sat}%, ${light + 20}%);
+            text-shadow: 0 0 12px ${glowColor}, 0 0 30px ${softGlow};
+          ">
+            ${textHtml}
+          </div>
+        </div>
         <div class="dream-meta">
           <span class="dream-time" data-timestamp="${dream.timestamp}">${timeAgo(dream.timestamp)}</span>
           <span class="dream-id">#${dream.id}</span>
@@ -552,6 +647,31 @@
 
     // Recalibrate every 5 min
     setInterval(calibrateClock, 300000);
+
+    // ── Vision board decorative dots ──
+    function addDotDecorations() {
+      const wall = document.getElementById('dreamWall');
+      const colors = [
+        'hsla(200,80%,70%,0.25)', 'hsla(40,90%,70%,0.2)',
+        'hsla(260,70%,70%,0.2)', 'hsla(340,80%,70%,0.15)',
+        'hsla(50,80%,80%,0.2)', 'hsla(180,60%,70%,0.2)'
+      ];
+      for (let i = 0; i < 8; i++) {
+        const dot = document.createElement('div');
+        dot.className = 'dot-deco';
+        const size = 3 + Math.random() * 10;
+        dot.style.width = size + 'px';
+        dot.style.height = size + 'px';
+        dot.style.background = colors[i % colors.length];
+        dot.style.boxShadow = `0 0 ${size * 2}px ${colors[i % colors.length]}`;
+        dot.style.left = (Math.random() * 85 + 5) + '%';
+        dot.style.top = (Math.random() * 85 + 5) + '%';
+        dot.style.animation = `floatDrift ${3 + Math.random() * 4}s ease-in-out infinite`;
+        dot.style.animationDelay = (Math.random() * 3) + 's';
+        wall.appendChild(dot);
+      }
+    }
+    addDotDecorations();
   </script>
   <!-- Service Worker -->
   <script>
