@@ -77,9 +77,11 @@
 
     /* Vision Card — each dream appears as a glowing vision-board element */
     .dream-card {
-      width: 100%;
-      max-width: 250px;
-      padding: 20px 18px 14px;
+      width: 250px;
+      height: 250px;
+      padding: 16px;
+      border-radius: 20px;
+      overflow: hidden;
       border-radius: 20px;
       position: relative;
       animation: visionIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
@@ -88,25 +90,15 @@
       transition: all 0.4s;
     }
 
-    /* Outer glow ring */
+    /* Outer glow ring — uses CSS variable set inline */
     .dream-card::before {
       content: '';
       position: absolute;
-      inset: -2px;
-      border-radius: 22px;
-      opacity: 0.5;
+      inset: -3px;
+      border-radius: 23px;
+      background: hsla(0, 0%, 100%, 0.06);
+      filter: blur(6px);
       z-index: -1;
-      transition: opacity 0.5s;
-    }
-
-    /* Glow inner */
-    .dream-card::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      border-radius: 20px;
-      z-index: -1;
-      transition: opacity 0.5s;
     }
 
     @keyframes visionIn {
@@ -119,42 +111,43 @@
     .card-row {
       display: flex;
       align-items: flex-start;
-      gap: 6px;
+      gap: 8px;
     }
 
     .card-icon {
       flex-shrink: 0;
-      width: 22px;
-      height: 22px;
+      width: 28px;
+      height: 28px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 12px;
-      border-radius: 8px;
+      font-size: 15px;
+      border-radius: 10px;
       transition: box-shadow 0.4s;
     }
 
     .card-icon.glow-icon {
-      box-shadow: 0 0 14px 3px rgba(255,255,255,0.1);
+      box-shadow: 0 0 20px 6px rgba(255,255,255,0.2);
     }
 
     .card-content {
       flex: 1;
       min-width: 0;
+      overflow: hidden;
     }
 
     .card-content .card-line {
       display: block;
       font-weight: 600;
-      line-height: 1.2;
+      line-height: 1.3;
       font-size: 12px;
-      padding: 0;
+      padding: 1px 0;
       transition: text-shadow 0.4s;
     }
 
-    /* Each line of text gets its own glow */
+    /* Each line of text gets its own glow — amplified */
     .card-line.glow-text {
-      text-shadow: 0 0 8px currentColor;
+      text-shadow: 0 0 14px currentColor, 0 0 28px currentColor;
     }
 
     .dream-card .dream-meta {
@@ -162,7 +155,7 @@
       gap: 8px;
       align-items: center;
       margin-top: 3px;
-      padding-left: 28px; /* align with text under icon (22px icon + 6px gap) */
+      padding-left: 36px; /* align with text under icon (28px icon + 8px gap) */
     }
     .dream-card .dream-time {
       font-size: 8px;
@@ -240,7 +233,7 @@
       .header h1 { font-size: 16px; }
       .card-icon { width: 18px; height: 18px; font-size: 10px; border-radius: 6px; }
       .card-row { gap: 4px; }
-      .dream-card .dream-meta { padding-left: 22px; }
+      .dream-card .dream-meta { padding-left: 28px; }
       .dream-wall { gap: 6px; padding: 6px 6px 12px; }
     }
   </style>
@@ -396,7 +389,7 @@
 
       function anim(now) {
         const elapsed = (now - startTime) / 1000;
-        if (elapsed > 5) {
+        if (elapsed > 6) {
           ctx.clearRect(0, 0, W, H);
           document.getElementById('presentSparkWrap').style.display = 'none';
           return;
@@ -429,7 +422,7 @@
         cancelAnimationFrame(window._pRaf);
         ctx.clearRect(0, 0, W, H);
         document.getElementById('presentSparkWrap').style.display = 'none';
-      }, 5000);
+      }, 6000);
     }
 
     // ── Dream Wall ──
@@ -490,10 +483,10 @@
       const sat = 75;
       const light = 65;
       const bgLight = 8;
-      const glowColor = `hsla(${hue}, ${sat}%, ${light}%, 0.4)`;
-      const softGlow = `hsla(${hue}, ${sat}%, ${light}%, 0.15)`;
-      const bgGlow = `hsla(${hue}, ${sat}%, ${light}%, 0.06)`;
-      const borderColor = `hsla(${hue}, ${sat}%, ${light}%, 0.15)`;
+      const glowColor = `hsla(${hue}, ${sat}%, ${light}%, 0.6)`;
+      const softGlow = `hsla(${hue}, ${sat}%, ${light}%, 0.35)`;
+      const bgGlow = `hsla(${hue}, ${sat}%, ${light}%, 0.1)`;
+      const borderColor = `hsla(${hue}, ${sat}%, ${light}%, 0.3)`;
 
       // Apply inline styles for color
       card.style.background = `linear-gradient(135deg, ${bgGlow}, rgba(255,255,255,0.02))`;
@@ -502,8 +495,9 @@
 
       // Glow via pseudo-elements (set via custom property or inline box-shadow)
       card.style.boxShadow = `
-        0 0 30px 4px ${softGlow},
-        inset 0 0 20px 2px ${bgGlow}
+        0 0 40px 8px ${softGlow},
+        0 0 80px 16px ${bgGlow},
+        inset 0 0 30px 4px ${bgGlow}
       `;
 
       const emoji = dream.emoji || '✨';
@@ -530,11 +524,11 @@
           <div class="card-icon glow-icon" style="
             background: ${bgGlow};
             color: hsl(${hue}, ${sat}%, ${light}%);
-            box-shadow: 0 0 14px 4px ${softGlow};
+            box-shadow: 0 0 24px 8px ${softGlow};
             border: 1px solid ${borderColor};
           ">${emoji}</div>
           <div class="card-content" style="color: hsl(${hue}, ${sat}%, ${light + 20}%);
-            text-shadow: 0 0 12px ${glowColor}, 0 0 30px ${softGlow};
+            text-shadow: 0 0 16px ${glowColor}, 0 0 40px ${softGlow}, 0 0 80px ${glowColor};
           ">
             ${textHtml}
           </div>
