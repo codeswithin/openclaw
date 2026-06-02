@@ -71,14 +71,14 @@
       display: flex;
       flex-wrap: wrap;
       justify-content: center;
-      gap: 16px;
-      padding: 16px;
+      gap: 12px;
+      padding: 12px;
     }
 
     /* Vision Card — each dream appears as a glowing vision-board element */
     .dream-card {
       width: 250px;
-      padding: 12px;
+      padding: 10px;
       border-radius: 20px;
       overflow: hidden;
       position: relative;
@@ -112,7 +112,7 @@
     .card-row {
       display: flex;
       align-items: flex-start;
-      gap: 10px;
+      gap: 8px;
     }
 
     .card-icon {
@@ -137,7 +137,7 @@
 
     .card-lines {
       display: -webkit-box;
-      -webkit-line-clamp: 4;
+      -webkit-line-clamp: 3;
       -webkit-box-orient: vertical;
       overflow: hidden;
     }
@@ -145,8 +145,8 @@
     .card-lines .card-line {
       display: block;
       font-weight: 700;
-      line-height: 1.0;
-      padding: 1px 0;
+      line-height: 0.9;
+      padding: 0;
       transition: text-shadow 0.4s;
       /* font-size set by adaptFontSize */
     }
@@ -566,17 +566,17 @@
 
       let base, iconSize;
       if (count <= 5) {
-        base = isTiny ? 22 : 30;
-        iconSize = isTiny ? 48 : 64;
+        base = isTiny ? 18 : 24;
+        iconSize = isTiny ? 40 : 52;
       } else if (count <= 12) {
-        base = isTiny ? 17 : 22;
-        iconSize = isTiny ? 36 : 48;
+        base = isTiny ? 15 : 18;
+        iconSize = isTiny ? 32 : 40;
       } else if (count <= 25) {
-        base = isTiny ? 14 : 17;
-        iconSize = isTiny ? 28 : 36;
+        base = isTiny ? 12 : 15;
+        iconSize = isTiny ? 24 : 30;
       } else {
-        base = isTiny ? 12 : 14;
-        iconSize = isTiny ? 22 : 28;
+        base = isTiny ? 11 : 12;
+        iconSize = isTiny ? 18 : 24;
       }
 
       document.querySelectorAll('.card-lines .card-line').forEach(el => {
