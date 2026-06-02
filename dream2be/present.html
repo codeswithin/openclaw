@@ -71,8 +71,8 @@
       display: flex;
       flex-wrap: wrap;
       justify-content: center;
-      gap: 12px;
-      padding: 12px 10px 40px;
+      gap: 8px;
+      padding: 8px 8px 20px;
     }
 
     /* Vision Card — each dream appears as a glowing vision-board element */
@@ -119,23 +119,23 @@
     .card-row {
       display: flex;
       align-items: flex-start;
-      gap: 12px;
+      gap: 6px;
     }
 
     .card-icon {
       flex-shrink: 0;
-      width: 40px;
-      height: 40px;
+      width: 22px;
+      height: 22px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 22px;
-      border-radius: 14px;
+      font-size: 12px;
+      border-radius: 8px;
       transition: box-shadow 0.4s;
     }
 
     .card-icon.glow-icon {
-      box-shadow: 0 0 20px 6px rgba(255,255,255,0.15);
+      box-shadow: 0 0 14px 3px rgba(255,255,255,0.1);
     }
 
     .card-content {
@@ -146,33 +146,33 @@
     .card-content .card-line {
       display: block;
       font-weight: 600;
-      line-height: 1.3;
-      font-size: 13px;
-      padding: 1px 0;
+      line-height: 1.2;
+      font-size: 12px;
+      padding: 0;
       transition: text-shadow 0.4s;
     }
 
     /* Each line of text gets its own glow */
     .card-line.glow-text {
-      text-shadow: 0 0 12px currentColor;
+      text-shadow: 0 0 8px currentColor;
     }
 
     .dream-card .dream-meta {
       display: flex;
       gap: 8px;
       align-items: center;
-      margin-top: 8px;
-      padding-left: 52px; /* align with text under icon (40px icon + 12px gap) */
+      margin-top: 3px;
+      padding-left: 28px; /* align with text under icon (22px icon + 6px gap) */
     }
     .dream-card .dream-time {
-      font-size: 10px;
-      color: rgba(255,255,255,0.15);
-      letter-spacing: 0.5px;
+      font-size: 8px;
+      color: rgba(255,255,255,0.10);
+      letter-spacing: 0.3px;
       font-family: monospace;
     }
     .dream-card .dream-id {
-      font-size: 9px;
-      color: rgba(255,255,255,0.08);
+      font-size: 7px;
+      color: rgba(255,255,255,0.06);
       font-family: monospace;
     }
 
@@ -236,12 +236,12 @@
 
     /* ── Responsive ── */
     @media (max-width: 480px) {
-      .dream-card { max-width: 100%; padding: 8px 12px 6px; }
-      .header h1 { font-size: 18px; }
-      .card-icon { width: 20px; height: 20px; font-size: 12px; border-radius: 8px; }
-      .card-content .card-line { font-size: 12px; }
-      .card-row { gap: 6px; }
-      .dream-card .dream-meta { padding-left: 26px; }
+      .dream-card { max-width: 100%; padding: 5px 10px 4px; }
+      .header h1 { font-size: 16px; }
+      .card-icon { width: 18px; height: 18px; font-size: 10px; border-radius: 6px; }
+      .card-row { gap: 4px; }
+      .dream-card .dream-meta { padding-left: 22px; }
+      .dream-wall { gap: 6px; padding: 6px 6px 12px; }
     }
   </style>
 </head>
@@ -348,7 +348,11 @@
 
     generateStars();
     drawStars();
-    window.addEventListener('resize', () => { generateStars(); drawStars(); });
+    window.addEventListener('resize', () => {
+      generateStars();
+      drawStars();
+      adaptFontSize(document.querySelectorAll('.dream-card').length);
+    });
 
     // ── Spark Burst Effect ──
     function burstSpark(text, cx, cy) {
@@ -526,7 +530,7 @@
           <div class="card-icon glow-icon" style="
             background: ${bgGlow};
             color: hsl(${hue}, ${sat}%, ${light}%);
-            box-shadow: 0 0 24px 6px ${softGlow};
+            box-shadow: 0 0 14px 4px ${softGlow};
             border: 1px solid ${borderColor};
           ">${emoji}</div>
           <div class="card-content" style="color: hsl(${hue}, ${sat}%, ${light + 20}%);
@@ -552,6 +556,38 @@
     function updateCounts() {
       const count = dreamWall.children.length;
       dreamCountEl.textContent = count + ' dream' + (count !== 1 ? 's' : '');
+      adaptFontSize(count);
+    }
+
+    // Adaptive font size based on visible card count
+    function adaptFontSize(count) {
+      let base, iconSize, iconFont;
+      if (count <= 5) {
+        base = 13; iconSize = 24; iconFont = 13;
+      } else if (count <= 15) {
+        base = 11; iconSize = 20; iconFont = 11;
+      } else if (count <= 30) {
+        base = 10; iconSize = 18; iconFont = 10;
+      } else {
+        base = 9; iconSize = 16; iconFont = 9;
+      }
+
+      // Clamp by viewport height too — tiny screens get smaller text
+      const vh = window.innerHeight;
+      if (vh < 700) {
+        base = Math.max(8, base - 1);
+        iconSize = Math.max(14, iconSize - 2);
+        iconFont = Math.max(8, iconFont - 1);
+      }
+
+      document.querySelectorAll('.card-content .card-line').forEach(el => {
+        el.style.fontSize = base + 'px';
+      });
+      document.querySelectorAll('.card-icon').forEach(el => {
+        el.style.width = iconSize + 'px';
+        el.style.height = iconSize + 'px';
+        el.style.fontSize = iconFont + 'px';
+      });
     }
 
     // ── Socket.io ──
