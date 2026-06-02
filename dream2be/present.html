@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>dream2be · presentation</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      background: radial-gradient(ellipse at 50% 0%, #0d0a20 0%, #070514 50%, #020108 100%);
+      font-family: -apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif;
+      color: #fff;
+      overflow-x: hidden;
+      padding: 20px;
+    }
+
+    /* ── Header ── */
+    .header {
+      text-align: center;
+      padding: 30px 0 20px;
+      position: relative;
+      z-index: 2;
+    }
+    .header h1 {
+      font-size: 22px;
+      font-weight: 300;
+      letter-spacing: 6px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.4);
+    }
+    .header .stats {
+      font-size: 13px;
+      color: rgba(255,255,255,0.2);
+      margin-top: 6px;
+      letter-spacing: 2px;
+    }
+    .header .status-dot {
+      display: inline-block;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #44cc44;
+      margin-right: 6px;
+      animation: pulse-dot 2s ease-in-out infinite;
+    }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+    .header .status-dot.offline { background: #444; animation: none; }
+
+    /* ── Dream Wall ── */
+    .dream-wall {
+      max-width: 700px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 2;
+      min-height: 60vh;
+    }
+
+    .dream-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 20px;
+      padding: 22px 24px;
+      margin-bottom: 14px;
+      backdrop-filter: blur(10px);
+      animation: cardIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+      opacity: 0;
+      transform: translateY(30px);
+    }
+
+    @keyframes cardIn {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .dream-card .dream-emoji {
+      font-size: 28px;
+      margin-bottom: 8px;
+    }
+    .dream-card .dream-text {
+      font-size: 20px;
+      line-height: 1.5;
+      color: rgba(255,255,255,0.9);
+      font-weight: 400;
+      word-break: break-word;
+    }
+    .dream-card .dream-time {
+      font-size: 12px;
+      color: rgba(255,255,255,0.2);
+      margin-top: 10px;
+      letter-spacing: 1px;
+    }
+    .dream-card .dream-id {
+      display: inline-block;
+      font-size: 11px;
+      color: rgba(255,255,255,0.1);
+      margin-top: 4px;
+      font-family: monospace;
+    }
+
+    /* ── Empty State ── */
+    .empty-state {
+      text-align: center;
+      padding: 80px 20px;
+      color: rgba(255,255,255,0.15);
+    }
+    .empty-state .icon { font-size: 48px; margin-bottom: 16px; }
+    .empty-state p { font-size: 16px; line-height: 1.6; }
+
+    /* ── Background particles (subtle) ── */
+    #bgCanvas {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.3;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 480px) {
+      .dream-card { padding: 16px 18px; }
+      .dream-card .dream-text { font-size: 17px; }
+      .header h1 { font-size: 18px; }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="bgCanvas"></canvas>
+
+  <div class="header">
+    <h1>✨ dream feed ✨</h1>
+    <div class="stats">
+      <span class="status-dot" id="statusDot"></span>
+      <span id="statusText">connecting...</span>
+      <span style="margin:0 10px">·</span>
+      <span id="dreamCount">0 dreams</span>
+      <span style="margin:0 10px">·</span>
+      <span id="liveCount">0 watching</span>
+    </div>
+  </div>
+
+  <div class="dream-wall" id="dreamWall">
+    <div class="empty-state" id="emptyState">
+      <div class="icon">🕯️</div>
+      <p>Waiting for dreams to light up...</p>
+      <p style="font-size:13px; margin-top:8px; color:rgba(255,255,255,0.1)">Someone is about to share their dream</p>
+    </div>
+  </div>
+
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script>
+    // ── Background particles ──
+    const canvas = document.getElementById('bgCanvas');
+    const ctx = canvas.getContext('2d');
+    let W, H;
+    function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+    resize(); window.addEventListener('resize', resize);
+
+    const particles = Array.from({length: 30}, () => ({
+      x: Math.random() * W, y: Math.random() * H,
+      speedY: -(Math.random() * 0.5 + 0.2),
+      speedX: (Math.random() - 0.5) * 0.2,
+      size: Math.random() * 2 + 0.5,
+      opacity: Math.random() * 0.3 + 0.05
+    }));
+
+    function animate() {
+      ctx.clearRect(0, 0, W, H);
+      for (const p of particles) {
+        p.y += p.speedY; p.x += p.speedX;
+        if (p.y < -10) { p.y = H + 10; p.x = Math.random() * W; }
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255,200,150,${p.opacity})`;
+        ctx.fill();
+      }
+      requestAnimationFrame(animate);
+    }
+    animate();
+
+    // ── Dream Wall ──
+    const dreamWall = document.getElementById('dreamWall');
+    const emptyState = document.getElementById('emptyState');
+    const statusDot = document.getElementById('statusDot');
+    const statusText = document.getElementById('statusText');
+    const dreamCountEl = document.getElementById('dreamCount');
+    const liveCountEl = document.getElementById('liveCount');
+    const MAX_VISIBLE = 50;
+
+    const emojiMap = {
+      '✨':'✨','🌟':'🌟','💫':'💫','⭐':'⭐','🔥':'🔥',
+      '🌙':'🌙','🕯️':'🕯️','💭':'💭','🌈':'🌈','❤️':'❤️'
+    };
+
+    function timeAgo(ts) {
+      const sec = Math.floor((Date.now() - ts) / 1000);
+      if (sec < 10) return 'just now';
+      if (sec < 60) return sec + 's ago';
+      const min = Math.floor(sec / 60);
+      return min + 'm ago';
+    }
+
+    function addDream(dream) {
+      emptyState?.remove();
+
+      const card = document.createElement('div');
+      card.className = 'dream-card';
+      card.style.animationDelay = '0s';
+
+      const emoji = emojiMap[dream.emoji] || '✨';
+
+      card.innerHTML = `
+        <div class="dream-emoji">${emoji}</div>
+        <div class="dream-text">${dream.text}</div>
+        <div class="dream-time">${timeAgo(dream.timestamp)}</div>
+        <div class="dream-id">#${dream.id}</div>
+      `;
+
+      dreamWall.prepend(card);
+
+      // Keep max visible
+      while (dreamWall.children.length > MAX_VISIBLE) {
+        dreamWall.removeChild(dreamWall.lastChild);
+      }
+
+      updateCounts();
+    }
+
+    function updateCounts() {
+      const count = dreamWall.children.length;
+      dreamCountEl.textContent = count + ' dream' + (count !== 1 ? 's' : '');
+    }
+
+    // ── Socket.io ──
+    const socket = io('https://api.koli.emyx.us:3003', { transports: ['websocket', 'polling'] });
+
+    socket.on('connect', () => {
+      statusDot.className = 'status-dot';
+      statusText.textContent = 'live';
+      socket.emit('identify', 'presenter');
+    });
+
+    socket.on('connect_error', () => {
+      statusDot.className = 'status-dot offline';
+      statusText.textContent = 'offline';
+    });
+
+    // Receive dream
+    socket.on('new-dream', (dream) => {
+      addDream(dream);
+    });
+
+    // Catch up on history
+    socket.on('connect', () => {
+      fetch('https://api.koli.emyx.us:3003/dreams')
+        .then(r => r.json())
+        .then(data => {
+          if (data.success && data.dreams) {
+            data.dreams.forEach(d => {
+              // Check if already shown
+              const exists = dreamWall.querySelector(`.dream-id:contains('#${d.id}')`);
+              if (!exists) addDream(d);
+            });
+          }
+        })
+        .catch(() => {});
+    });
+
+    socket.on('stats', (stats) => {
+      liveCountEl.textContent = stats.presenters + ' watching';
+    });
+
+    // Update timestamps every 30s
+    setInterval(() => {
+      document.querySelectorAll('.dream-time').forEach(el => {
+        const card = el.closest('.dream-card');
+        const idEl = card?.querySelector('.dream-id');
+        if (idEl) {
+          const id = parseInt(idEl.textContent.replace('#',''));
+          // Find dream in history for accurate timestamp
+          // Simple fallback: just show "recent"
+        }
+      });
+    }, 30000);
+  </script>
+</body>
+</html>
