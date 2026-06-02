@@ -558,7 +558,7 @@
       adaptFontSize(count);
     }
 
-    // Adaptive font size based on visible card count
+    // Adaptive font size based on visible card count — 3x larger
     function adaptFontSize(count) {
       const vw = window.innerWidth;
       const vh = window.innerHeight;
@@ -566,17 +566,17 @@
 
       let base, iconSize;
       if (count <= 5) {
-        base = isTiny ? 18 : 24;
-        iconSize = isTiny ? 40 : 52;
+        base = isTiny ? 54 : 72;
+        iconSize = isTiny ? 120 : 156;
       } else if (count <= 12) {
-        base = isTiny ? 15 : 18;
-        iconSize = isTiny ? 32 : 40;
+        base = isTiny ? 45 : 54;
+        iconSize = isTiny ? 96 : 120;
       } else if (count <= 25) {
-        base = isTiny ? 12 : 15;
-        iconSize = isTiny ? 24 : 30;
+        base = isTiny ? 36 : 45;
+        iconSize = isTiny ? 72 : 90;
       } else {
-        base = isTiny ? 11 : 12;
-        iconSize = isTiny ? 18 : 24;
+        base = isTiny ? 33 : 36;
+        iconSize = isTiny ? 54 : 72;
       }
 
       document.querySelectorAll('.card-lines .card-line').forEach(el => {
