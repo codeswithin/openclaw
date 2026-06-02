@@ -84,7 +84,6 @@
       position: relative;
       user-select: none;
       -webkit-user-select: none;
-    }
       animation: visionIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
       opacity: 0;
       transform: translateY(30px) scale(0.95);
@@ -136,7 +135,9 @@
     }
 
     .card-lines {
-      /* show all lines — height matches content exactly */
+      display: flex;
+      flex-direction: column;
+      gap: 0;
     }
 
     .card-lines .card-line {
@@ -144,6 +145,7 @@
       font-weight: 700;
       line-height: 1.0;
       padding: 0;
+      margin: 0;
       transition: text-shadow 0.4s;
       /* font-size set by adaptFontSize */
     }
