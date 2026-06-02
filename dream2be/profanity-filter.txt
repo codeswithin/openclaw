@@ -1,0 +1,82 @@
+# Profanity / Obscenity Filter List — dream2be
+# One word per line, lowercase.
+# These are blocked from appearing in dream submissions.
+# Additions welcome — keep it sensible, not overbearing.
+
+fuck
+fucking
+fucked
+fucker
+fuckers
+shit
+shits
+shitting
+ass
+asses
+asshole
+assholes
+bitch
+bitches
+bitching
+bastard
+bastards
+cunt
+cunts
+dick
+dicks
+dickhead
+dickheads
+cock
+cocks
+piss
+pissing
+pissed
+slut
+sluts
+whore
+whores
+motherfucker
+motherfuckers
+motherfucking
+nigga
+nigger
+niggas
+fag
+faggot
+faggots
+retard
+retarded
+douche
+douchebag
+douchebags
+jackass
+jackasses
+damn
+dammit
+goddamn
+goddammit
+bullshit
+horseshit
+shithead
+shitheads
+prick
+pricks
+twat
+twats
+bollocks
+wanker
+wankers
+arse
+arsehole
+arseholes
+pissed
+pisser
+crap
+crappy
+sucks
+sucking
+suck
+piss off
+screw you
+son of a bitch
+sonofabitch

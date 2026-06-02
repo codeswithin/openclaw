@@ -12,6 +12,30 @@ const sslOptions = {
   cert: fs.readFileSync('/etc/letsencrypt/live/api.dream2be.emyx.us/fullchain.pem')
 };
 
+// ── Profanity Filter ──
+const profanityList = fs.readFileSync(__dirname + '/profanity-filter.txt', 'utf-8')
+  .split('\n')
+  .map(l => l.trim().toLowerCase())
+  .filter(l => l && !l.startsWith('#'));
+
+function containsProfanity(text) {
+  const lower = text.toLowerCase();
+  return profanityList.some(word => {
+    // Match at word boundaries (not inside other words)
+    const re = new RegExp('\\b' + word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b');
+    return re.test(lower);
+  });
+}
+
+function censorProfanity(text) {
+  let censored = text;
+  for (const word of profanityList) {
+    const re = new RegExp('\\b' + word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'gi');
+    censored = censored.replace(re, (match) => '*'.repeat(match.length));
+  }
+  return censored;
+}
+
 const dreamHistory = [];
 const MAX_DREAMS = 200;
 let dreamIdCounter = 0;
@@ -51,6 +75,15 @@ io.on('connection', (socket) => {
       // Truncate to 20 words preserving newlines
       const parts = text.match(/\S+\s*/g) || [];
       text = parts.slice(0, 20).join('').trim();
+    }
+    // Profanity check
+    if (containsProfanity(text)) {
+      const censored = censorProfanity(text);
+      socket.emit('dream-rejected', {
+        reason: 'Your dream contains inappropriate language. Please keep it clean.',
+        censored: censored !== text ? censored : null
+      });
+      return;
     }
     const dream = { id: ++dreamIdCounter, text, emoji: data.emoji || '✨', timestamp: Date.now(), votes: 0 };
     if (!dream.text) return;
