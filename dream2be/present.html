@@ -365,12 +365,20 @@
       return html;
     }
 
+    let clockOffset = 0; // serverTime - clientTime
     function timeAgo(ts) {
-      const sec = Math.floor((Date.now() - ts) / 1000);
-      if (sec < 10) return 'just now';
+      const sec = Math.floor((Date.now() + clockOffset - ts) / 1000);
+      if (sec < 5) return 'just now';
       if (sec < 60) return sec + 's ago';
       const min = Math.floor(sec / 60);
-      return min + 'm ago';
+      if (min < 60) return min + 'm ago';
+      const hrs = Math.floor(min / 60);
+      return hrs + 'h ago';
+    }
+
+    function updateTimestamp(el) {
+      const ts = parseInt(el.dataset.timestamp);
+      if (ts) el.textContent = timeAgo(ts);
     }
 
     function addDream(dream) {
@@ -381,12 +389,13 @@
       card.style.animationDelay = '0s';
 
       const emoji = emojiMap[dream.emoji] || '✨';
+      const now = Date.now() + clockOffset;
 
       card.innerHTML = `
         <div class="dream-emoji">${emoji}</div>
         <div class="dream-text">${formatText(dream.text)}</div>
         <div class="dream-meta">
-          <span class="dream-time">${timeAgo(dream.timestamp)}</span>
+          <span class="dream-time" data-timestamp="${dream.timestamp}">${timeAgo(dream.timestamp)}</span>
           <span class="dream-id">#${dream.id}</span>
         </div>
       `;
@@ -481,18 +490,29 @@
     }
 
 
-    // Update timestamps every 30s
+    // Calibrate clock with server on connect and update timestamps every 30s
+    function calibrateClock() {
+      fetch('https://api.dream2be.emyx.us:3003/time')
+        .then(r => r.json())
+        .then(data => {
+          const clientNow = Date.now();
+          // Estimate round-trip delay and adjust
+          clockOffset = data.now - clientNow;
+          // Refresh all timestamps after calibration
+          document.querySelectorAll('.dream-time[data-timestamp]').forEach(updateTimestamp);
+        })
+        .catch(() => {});
+    }
+
+    calibrateClock();
+
+    // Update timestamps every 15s
     setInterval(() => {
-      document.querySelectorAll('.dream-time').forEach(el => {
-        const card = el.closest('.dream-card');
-        const idEl = card?.querySelector('.dream-id');
-        if (idEl) {
-          const id = parseInt(idEl.textContent.replace('#',''));
-          // Find dream in history for accurate timestamp
-          // Simple fallback: just show "recent"
-        }
-      });
-    }, 30000);
+      document.querySelectorAll('.dream-time[data-timestamp]').forEach(updateTimestamp);
+    }, 15000);
+
+    // Recalibrate every 5 min
+    setInterval(calibrateClock, 300000);
   </script>
   <!-- Service Worker -->
   <script>

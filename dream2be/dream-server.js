@@ -21,6 +21,9 @@ const connectedPeers = new Map();
 app.get('/health', (req, res) => {
   res.json({ success: true, message: 'Dream2be server running', totalDreams: dreamHistory.length, connectedPeers: connectedPeers.size });
 });
+app.get('/time', (req, res) => {
+  res.json({ now: Date.now() });
+});
 app.get('/dreams', (req, res) => {
   const since = parseInt(req.query.since) || 0;
   res.json({ success: true, dreams: dreamHistory.filter(d => d.id > since) });
