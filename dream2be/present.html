@@ -78,11 +78,9 @@
     /* Vision Card — each dream appears as a glowing vision-board element */
     .dream-card {
       width: 250px;
-      height: 250px;
       padding: 18px;
       border-radius: 20px;
       overflow: hidden;
-      border-radius: 20px;
       position: relative;
       animation: visionIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
       opacity: 0;
@@ -134,7 +132,14 @@
       overflow: hidden;
     }
 
-    .card-content .card-line {
+    .card-lines {
+      display: -webkit-box;
+      -webkit-line-clamp: 7;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .card-lines .card-line {
       display: block;
       font-weight: 700;
       line-height: 1.3;
@@ -450,7 +455,8 @@
     // Escape HTML and render newlines as <br>
     function formatText(text) {
       const escaped = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-      return escaped.split('\n').map(line => `<span class="card-line glow-text">${line}</span>`).join('');
+      const lines = escaped.split('\n').map(line => `<span class="card-line glow-text">${line}</span>`).join('');
+      return `<div class="card-lines">${lines}</div>`;
     }
 
     let clockOffset = 0; // serverTime - clientTime
@@ -571,7 +577,7 @@
         iconSize = isTiny ? 18 : 22;
       }
 
-      document.querySelectorAll('.card-content .card-line').forEach(el => {
+      document.querySelectorAll('.card-lines .card-line').forEach(el => {
         el.style.fontSize = base + 'px';
       });
       document.querySelectorAll('.card-icon').forEach(el => {
