@@ -291,6 +291,90 @@
     button:active { transform: translateY(0); }
     button:disabled { opacity: 0.3; cursor: not-allowed; transform: none; }
 
+    /* ── Confirmation Modal ── */
+    .confirm-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 50;
+      justify-content: center;
+      align-items: center;
+      padding: 24px;
+    }
+    .confirm-overlay.show { display: flex; }
+
+    .confirm-box {
+      background: rgba(20,16,40,0.95);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 20px;
+      padding: 28px 24px 20px;
+      max-width: 380px;
+      width: 100%;
+      text-align: center;
+      animation: confirmIn 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    @keyframes confirmIn {
+      from { opacity: 0; transform: translateY(20px) scale(0.95); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .confirm-box h3 {
+      font-size: 15px;
+      font-weight: 600;
+      color: rgba(255,200,150,0.6);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    .confirm-dream-preview {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-bottom: 20px;
+      font-size: 15px;
+      line-height: 1.6;
+      color: rgba(255,255,255,0.8);
+      text-align: left;
+      max-height: 200px;
+      overflow-y: auto;
+      word-break: break-word;
+      white-space: pre-wrap;
+    }
+
+    .confirm-actions {
+      display: flex;
+      gap: 10px;
+    }
+    .confirm-actions button {
+      flex: 1;
+      padding: 14px;
+      border-radius: 14px;
+      font-size: 15px;
+      font-weight: 600;
+      font-family: inherit;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-transform: none;
+      letter-spacing: 0.5px;
+    }
+    .confirm-cancel {
+      background: rgba(255,255,255,0.06);
+      color: rgba(255,255,255,0.6);
+    }
+    .confirm-cancel:hover { background: rgba(255,255,255,0.1); }
+    .confirm-submit {
+      background: linear-gradient(135deg, #ff8c38, #ff6622);
+      color: #fff;
+      box-shadow: 0 4px 14px rgba(255,100,30,0.3);
+    }
+    .confirm-submit:hover { transform: translateY(-1px); }
+
     /* ── Heart Icon ── */
     .heart-icon {
       font-size: 20px;
@@ -417,6 +501,18 @@
 
     <!-- Success Message -->
     <div class="success-msg" id="successMsg"></div>
+
+    <!-- Confirmation Modal -->
+    <div class="confirm-overlay" id="confirmOverlay">
+      <div class="confirm-box">
+        <h3>Light your dream?</h3>
+        <div class="confirm-dream-preview" id="confirmPreview"></div>
+        <div class="confirm-actions">
+          <button class="confirm-cancel" id="confirmCancel">Cancel</button>
+          <button class="confirm-submit" id="confirmSubmit">✨ Light it</button>
+        </div>
+      </div>
+    </div>
 
     <!-- Dream Spark Overlay (Canvas) -->
     <div class="spark-wrap" id="sparkWrap">
@@ -653,15 +749,30 @@
       'Manifestation begins ✨',
     ];
 
-    lightBtn.addEventListener('click', () => {
-      const dream = dreamInput.value.trim();
-      if (!dream) {
-        dreamInput.focus();
-        dreamInput.style.borderColor = '#ff4444';
-        setTimeout(() => dreamInput.style.borderColor = '', 1000);
-        return;
-      }
+    // ── Confirmation Modal ──
+    const confirmOverlay = document.getElementById('confirmOverlay');
+    const confirmPreview = document.getElementById('confirmPreview');
+    const confirmCancel = document.getElementById('confirmCancel');
+    const confirmSubmit = document.getElementById('confirmSubmit');
+    let pendingDream = '';
 
+    function showConfirm(dream) {
+      pendingDream = dream;
+      confirmPreview.textContent = dream;
+      confirmOverlay.classList.add('show');
+    }
+
+    function hideConfirm() {
+      confirmOverlay.classList.remove('show');
+      pendingDream = '';
+    }
+
+    confirmCancel.addEventListener('click', hideConfirm);
+    confirmOverlay.addEventListener('click', (e) => {
+      if (e.target === confirmOverlay) hideConfirm();
+    });
+
+    function executeSubmit(dream) {
       // Disable button
       lightBtn.disabled = true;
       lightBtn.textContent = '✨ LIT ✨';
@@ -680,9 +791,10 @@
       // Share dream to presentation feed
       const dreamEmoji = submitDream(dream);
 
-      // Show success with emoji
+      // Show success with emoji — preserve newlines as <br>
       const quote = dreamQuotes[Math.floor(Math.random() * dreamQuotes.length)];
-      successMsg.innerHTML = `${dreamEmoji} <span id="burstText">&ldquo;${dream}&rdquo;</span> &mdash; ${quote}`;
+      const dreamHtml = dream.replace(/\n/g, '<br>');
+      successMsg.innerHTML = `${dreamEmoji} <span id="burstText">&ldquo;${dreamHtml}&rdquo;</span> &mdash; ${quote}`;
 
       // Wait for show transition, then spark from dream text position
       setTimeout(() => {
@@ -700,6 +812,27 @@
         lightBtn.disabled = false;
         lightBtn.textContent = 'LIGHT MY DREAM';
       }, 3000);
+    }
+
+    confirmSubmit.addEventListener('click', () => {
+      if (pendingDream) {
+        const dream = pendingDream;
+        hideConfirm();
+        executeSubmit(dream);
+      }
+    });
+
+    lightBtn.addEventListener('click', () => {
+      const dream = dreamInput.value.trim();
+      if (!dream) {
+        dreamInput.focus();
+        dreamInput.style.borderColor = '#ff4444';
+        setTimeout(() => dreamInput.style.borderColor = '', 1000);
+        return;
+      }
+
+      // Show confirmation modal instead of submitting directly
+      showConfirm(dream);
     });
 
     // Fix iOS viewport cursor offset after keyboard dismiss
@@ -724,11 +857,21 @@
       dreamInput.style.borderColor = remaining <= 3 ? 'rgba(255,100,80,0.5)' : '';
     });
 
-    // Enter key (Shift+Enter for newline, plain Enter to submit)
+    // Enter key (Shift+Enter for newline, plain Enter to submit — via confirmation)
     dreamInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
         lightBtn.click();
+      }
+    });
+
+    // Keyboard support for confirmation modal
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && confirmOverlay.classList.contains('show')) {
+        hideConfirm();
+      }
+      if (e.key === 'Enter' && confirmOverlay.classList.contains('show')) {
+        confirmSubmit.click();
       }
     });
   </script>

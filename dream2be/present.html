@@ -149,6 +149,28 @@
       z-index: 0;
     }
 
+    /* ── Debug Mode (show ?debug in URL) ── */
+    .debug-timestamp {
+      font-size: 10px;
+      color: rgba(255,180,80,0.5);
+      font-family: monospace;
+      letter-spacing: 0.3px;
+      margin-top: 4px;
+    }
+    .debug-id {
+      font-size: 24px;
+      font-weight: 700;
+      color: rgba(255,200,150,0.15);
+      position: absolute;
+      top: 8px;
+      right: 12px;
+      font-family: monospace;
+      line-height: 1;
+    }
+    .dream-card.debug-mode {
+      position: relative;
+    }
+
     /* ── Responsive ── */
     @media (max-width: 480px) {
       .dream-card { padding: 16px 18px; }
@@ -354,6 +376,14 @@
       '🌙':'🌙','🕯️':'🕯️','💭':'💭','🌈':'🌈','❤️':'❤️'
     };
 
+    const isDebug = location.search.includes('debug');
+
+    function formatTimestamp(ts) {
+      const d = new Date(ts);
+      return d.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }) +
+        '.' + String(d.getMilliseconds()).padStart(3, '0');
+    }
+
     // Format text: max 20 words, 2 words per line
     function formatText(text) {
       const words = text.trim().split(/\s+/).filter(w => w.length > 0).slice(0, 20);
@@ -385,11 +415,19 @@
       emptyState?.remove();
 
       const card = document.createElement('div');
-      card.className = 'dream-card';
+      card.className = 'dream-card' + (isDebug ? ' debug-mode' : '');
       card.style.animationDelay = '0s';
 
       const emoji = emojiMap[dream.emoji] || '✨';
       const now = Date.now() + clockOffset;
+
+      let debugHtml = '';
+      if (isDebug) {
+        debugHtml = `
+          <div class="debug-id">#${dream.id}</div>
+          <div class="debug-timestamp">${formatTimestamp(dream.timestamp)}</div>
+        `;
+      }
 
       card.innerHTML = `
         <div class="dream-emoji">${emoji}</div>
@@ -398,6 +436,7 @@
           <span class="dream-time" data-timestamp="${dream.timestamp}">${timeAgo(dream.timestamp)}</span>
           <span class="dream-id">#${dream.id}</span>
         </div>
+        ${debugHtml}
       `;
 
       dreamWall.prepend(card);
