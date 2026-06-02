@@ -42,11 +42,19 @@ io.on('connection', (socket) => {
     });
   });
   socket.on('dream', (data) => {
-    const dream = { id: ++dreamIdCounter, text: (data.text || '').trim().slice(0, 300), emoji: data.emoji || '✨', timestamp: Date.now() };
+    const dream = { id: ++dreamIdCounter, text: (data.text || '').trim().slice(0, 300), emoji: data.emoji || '✨', timestamp: Date.now(), votes: 0 };
     if (!dream.text) return;
     dreamHistory.push(dream);
     if (dreamHistory.length > MAX_DREAMS) dreamHistory.shift();
     io.emit('new-dream', dream);
+  });
+
+  socket.on('vote', (data) => {
+    const dream = dreamHistory.find(d => d.id === data.id);
+    if (dream) {
+      dream.votes = (dream.votes || 0) + 1;
+      io.emit('vote-update', { id: dream.id, votes: dream.votes });
+    }
   });
   socket.on('disconnect', () => {
     connectedPeers.delete(socket.id);

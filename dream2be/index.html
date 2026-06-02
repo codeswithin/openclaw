@@ -10,6 +10,7 @@
     body {
       min-height: 100vh;
       min-height: 100dvh;
+      min-height: -webkit-fill-available;
       background: radial-gradient(ellipse at 50% 0%, #141028 0%, #0b091a 60%, #05040e 100%);
       display: flex;
       justify-content: center;
@@ -27,6 +28,7 @@
       position: fixed;
       top: 0; left: 0;
       width: 100%; height: 100%;
+      height: -webkit-fill-available;
       pointer-events: none;
       z-index: 0;
     }
@@ -225,7 +227,6 @@
       line-height: 1.5;
       outline: none;
       resize: none;
-      backdrop-filter: blur(10px);
       transition: border-color 0.3s, box-shadow 0.3s;
     }
 
@@ -377,6 +378,16 @@
       .candle-scene { transform: scale(0.85); }
       button { font-size: 16px; padding: 16px 20px; }
     }
+
+    /* ── Submitted state ── */
+    .container.submitted h1,
+    .container.submitted .candle-scene,
+    .container.submitted .candle-label,
+    .container.submitted .input-wrap,
+    .container.submitted .btn-wrap,
+    .container.submitted .heart-icon {
+      display: none;
+    }
   </style>
 </head>
 <body>
@@ -399,7 +410,7 @@
 
     <!-- Input -->
     <div class="input-wrap">
-      <textarea id="dreamInput" placeholder="Type your dream..." maxlength="300"></textarea>
+      <textarea id="dreamInput" placeholder="Type your dream..." maxlength="300" autofocus></textarea>
     </div>
 
     <!-- CTA Button -->
@@ -407,8 +418,8 @@
       <button id="lightBtn">LIGHT MY DREAM</button>
     </div>
 
-    <!-- Heart Icon -->
-    <div class="heart-icon" id="heartIcon">🤍</div>
+    <!-- Success Message -->
+    <div class="success-msg" id="successMsg"></div>
 
     <!-- Dream Spark (SVG) -->
     <div class="spark-wrap" id="sparkWrap">
@@ -430,9 +441,6 @@
         </g>
       </svg>
     </div>
-
-    <!-- Success Message -->
-    <div class="success-msg" id="successMsg"></div>
 
     <!-- Phoenix / Fire -->
     <div class="phoenix-area">
@@ -538,7 +546,9 @@
       return warmHues[Math.abs(h) % warmHues.length];
     }
 
-    function renderSpark(dreamText) {
+    function renderSpark(dreamText, cx, cy) {
+      if (cx === undefined) cx = 100;
+      if (cy === undefined) cy = 100;
       const hue = hashToHue(dreamText);
       const sat = 88 + Math.abs(dreamText.length * 7) % 10;
       const light = 62 + Math.abs(dreamText.charCodeAt(0) * 3) % 15;
@@ -569,7 +579,7 @@
 
       // Outer glow halo
       const halo = document.createElementNS(ns, 'circle');
-      halo.setAttribute('cx','100'); halo.setAttribute('cy','100'); halo.setAttribute('r','65');
+      halo.setAttribute('cx',cx); halo.setAttribute('cy',cy); halo.setAttribute('r','65');
       halo.setAttribute('fill', 'url(#coreGlow)'); halo.setAttribute('opacity','0.7');
       halo.classList.add('dyn');
       halo.appendChild(anim({ attributeName:'r', values:'55;75;55', dur:'3s', repeatCount:'indefinite' }));
@@ -578,14 +588,14 @@
 
       // Big bright core
       const core = document.createElementNS(ns, 'circle');
-      core.setAttribute('cx','100'); core.setAttribute('cy','100'); core.setAttribute('r','8');
+      core.setAttribute('cx',cx); core.setAttribute('cy',cy); core.setAttribute('r','8');
       core.setAttribute('fill', '#fff'); core.classList.add('dyn');
       core.appendChild(anim({ attributeName:'r', values:'5;12;5', dur:'1.2s', repeatCount:'indefinite' }));
       group.appendChild(core);
 
       // Mid ring
       const ring = document.createElementNS(ns, 'circle');
-      ring.setAttribute('cx','100'); ring.setAttribute('cy','100');
+      ring.setAttribute('cx',cx); ring.setAttribute('cy',cy);
       ring.setAttribute('r','24'); ring.setAttribute('fill','none');
       ring.setAttribute('stroke', bright); ring.setAttribute('stroke-width','3');
       ring.setAttribute('opacity','0.6'); ring.classList.add('dyn');
@@ -595,7 +605,7 @@
 
       // Outer ring
       const ring2 = document.createElementNS(ns, 'circle');
-      ring2.setAttribute('cx','100'); ring2.setAttribute('cy','100');
+      ring2.setAttribute('cx',cx); ring2.setAttribute('cy',cy);
       ring2.setAttribute('r','42'); ring2.setAttribute('fill','none');
       ring2.setAttribute('stroke', color); ring2.setAttribute('stroke-width','1.5');
       ring2.setAttribute('opacity','0.3'); ring2.classList.add('dyn');
@@ -606,8 +616,8 @@
       // 12 rays
       for (let i = 0; i < 12; i++) {
         const a = i * 30 * Math.PI / 180;
-        const x1 = 100 + Math.cos(a) * 22, y1 = 100 + Math.sin(a) * 22;
-        const x2 = 100 + Math.cos(a) * 70, y2 = 100 + Math.sin(a) * 70;
+        const x1 = cx + Math.cos(a) * 22, y1 = cy + Math.sin(a) * 22;
+        const x2 = cx + Math.cos(a) * 70, y2 = cy + Math.sin(a) * 70;
         const line = document.createElementNS(ns, 'line');
         line.setAttribute('x1',x1); line.setAttribute('y1',y1);
         line.setAttribute('x2',x2); line.setAttribute('y2',y2);
@@ -628,7 +638,7 @@
 
         // Inner glow dot midway
         if (i % 2 === 0) {
-          const mx = 100 + Math.cos(a) * 40, my = 100 + Math.sin(a) * 40;
+          const mx = cx + Math.cos(a) * 40, my = cy + Math.sin(a) * 40;
           const md = document.createElementNS(ns, 'circle');
           md.setAttribute('cx',mx); md.setAttribute('cy',my); md.setAttribute('r','2.5');
           md.setAttribute('fill', glow); md.classList.add('dyn');
@@ -641,7 +651,7 @@
       for (let i = 0; i < 25; i++) {
         const a = Math.random() * 360, d = 25 + Math.random() * 75;
         const r2 = a * Math.PI / 180;
-        const px = 100 + Math.cos(r2) * d, py = 100 + Math.sin(r2) * d;
+        const px = cx + Math.cos(r2) * d, py = cy + Math.sin(r2) * d;
         const sz = 2 + Math.random() * 4;
         const p = document.createElementNS(ns, 'circle');
         p.setAttribute('cx',px); p.setAttribute('cy',py); p.setAttribute('r',sz);
@@ -662,7 +672,6 @@
     const flameGroup = document.getElementById('flameGroup');
     const halo = document.getElementById('halo');
     const successMsg = document.getElementById('successMsg');
-    const heartIcon = document.getElementById('heartIcon');
 
     const dreamQuotes = [
       'Your dream has been lit ✨',
@@ -687,14 +696,13 @@
       lightBtn.disabled = true;
       lightBtn.textContent = '✨ LIT ✨';
 
+      // Add submitted class to hide input elements
+      document.querySelector('.container').classList.add('submitted');
+
       // Light the candle
       flameGroup.classList.remove('unlit');
       flameGroup.classList.add('lit');
       halo.classList.add('lit');
-
-      // Show themed photo
-      document.getElementById('sparkWrap').classList.add('show');
-      renderSpark(dream);
 
       // Intensify particles
       intensifySparks();
@@ -704,8 +712,18 @@
 
       // Show success with emoji
       const quote = dreamQuotes[Math.floor(Math.random() * dreamQuotes.length)];
-      successMsg.innerHTML = `${dreamEmoji} &ldquo;${dream}&rdquo; &mdash; ${quote}`;
-      setTimeout(() => successMsg.classList.add('show'), 800);
+      successMsg.innerHTML = `${dreamEmoji} <span id="burstText">&ldquo;${dream}&rdquo;</span> &mdash; ${quote}`;
+
+      // Wait for show transition, then spark from dream text position
+      setTimeout(() => {
+        successMsg.classList.add('show');
+        document.getElementById('sparkWrap').classList.add('show');
+        const burstEl = document.getElementById('burstText');
+        const rect = burstEl.getBoundingClientRect();
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        renderSpark(dream, cx, cy);
+      }, 400);
 
       // Enable button after delay
       setTimeout(() => {
@@ -714,16 +732,15 @@
       }, 3000);
     });
 
-    // Heart toggle
-    heartIcon.addEventListener('click', () => {
-      if (heartIcon.textContent === '🤍') {
-        heartIcon.textContent = '❤️';
-        heartIcon.classList.add('saved');
-        setTimeout(() => heartIcon.classList.remove('saved'), 400);
-      } else {
-        heartIcon.textContent = '🤍';
-      }
-    });
+    // Fix iOS viewport cursor offset after keyboard dismiss
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', () => {
+        if (document.activeElement === dreamInput) {
+          dreamInput.blur();
+          dreamInput.focus();
+        }
+      });
+    }
 
     // Enter key (Shift+Enter for newline, plain Enter to submit)
     dreamInput.addEventListener('keydown', (e) => {

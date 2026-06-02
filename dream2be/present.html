@@ -50,6 +50,7 @@
     }
     .header .status-dot.offline { background: #444; animation: none; }
 
+
     /* ── Dream Wall ── */
     .dream-wall {
       max-width: 700px;
@@ -253,6 +254,11 @@
       addDream(dream);
     });
 
+    socket.on('vote-update', (data) => {
+      const countEl = document.querySelector('.vote-count[data-id="' + data.id + '"]');
+      if (countEl) countEl.textContent = data.votes;
+    });
+
     // Catch up on history
     socket.on('connect', () => {
       fetch('https://api.koli.emyx.us:3003/dreams')
@@ -272,6 +278,7 @@
     socket.on('stats', (stats) => {
       liveCountEl.textContent = stats.presenters + ' watching';
     });
+
 
     // Update timestamps every 30s
     setInterval(() => {
