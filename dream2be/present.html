@@ -28,7 +28,7 @@
     /* ── Header ── */
     .header {
       text-align: center;
-      padding: 30px 0 20px;
+      padding: 20px 0 10px;
       position: relative;
       z-index: 2;
     }
@@ -71,14 +71,14 @@
       display: flex;
       flex-wrap: wrap;
       justify-content: center;
-      gap: 12px;
-      padding: 12px;
+      gap: 10px;
+      padding: 10px;
     }
 
     /* Vision Card — each dream appears as a glowing vision-board element */
     .dream-card {
       width: 250px;
-      padding: 10px;
+      padding: 6px;
       border-radius: 20px;
       overflow: hidden;
       position: relative;
@@ -112,7 +112,7 @@
     .card-row {
       display: flex;
       align-items: flex-start;
-      gap: 8px;
+      gap: 6px;
     }
 
     .card-icon {
@@ -136,16 +136,13 @@
     }
 
     .card-lines {
-      display: -webkit-box;
-      -webkit-line-clamp: 3;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
+      /* show all lines — height matches content exactly */
     }
 
     .card-lines .card-line {
       display: block;
       font-weight: 700;
-      line-height: 0.9;
+      line-height: 1.0;
       padding: 0;
       transition: text-shadow 0.4s;
       /* font-size set by adaptFontSize */
@@ -235,11 +232,11 @@
 
     /* ── Responsive ── */
     @media (max-width: 480px) {
-      .dream-card { max-width: 100%; padding: 10px; gap: 10px; }
-      .header h1 { font-size: 16px; }
-      .card-row { gap: 8px; }
-      .dream-card .dream-meta { padding-left: 40px; }
-      .dream-wall { gap: 10px; padding: 10px; }
+      .dream-card { max-width: 100%; padding: 5px; }
+      .header h1 { font-size: 14px; }
+      .card-row { gap: 5px; }
+      .dream-card .dream-meta { padding-left: 32px; }
+      .dream-wall { gap: 8px; padding: 8px; }
     }
   </style>
 </head>
