@@ -8,8 +8,8 @@ const app = express();
 app.use(cors());
 
 const sslOptions = {
-  key: fs.readFileSync('/etc/letsencrypt/live/koli.emyx.us/privkey.pem'),
-  cert: fs.readFileSync('/etc/letsencrypt/live/koli.emyx.us/fullchain.pem')
+  key: fs.readFileSync('/etc/letsencrypt/live/api.dream2be.emyx.us/privkey.pem'),
+  cert: fs.readFileSync('/etc/letsencrypt/live/api.dream2be.emyx.us/fullchain.pem')
 };
 
 const dreamHistory = [];
@@ -42,7 +42,7 @@ io.on('connection', (socket) => {
     });
   });
   socket.on('dream', (data) => {
-    const dream = { id: ++dreamIdCounter, text: (data.text || '').trim().slice(0, 300), emoji: data.emoji || '✨', timestamp: Date.now(), votes: 0 };
+    const dream = { id: ++dreamIdCounter, text: (data.text || '').trim().split(/\s+/).filter(w => w.length > 0).slice(0, 20).join(' '), emoji: data.emoji || '✨', timestamp: Date.now(), votes: 0 };
     if (!dream.text) return;
     dreamHistory.push(dream);
     if (dreamHistory.length > MAX_DREAMS) dreamHistory.shift();

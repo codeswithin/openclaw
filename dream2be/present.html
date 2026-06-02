@@ -4,12 +4,21 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>dream2be · presentation</title>
+  <meta name="description" content="Live dream feed">
+  <meta name="theme-color" content="#0d1137">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="dream2be live">
+  <link rel="manifest" href="/present-manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/present-icon-192.png">
+  <link rel="apple-touch-icon" href="/icons/present-icon-192.png">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
       min-height: 100vh;
-      background: radial-gradient(ellipse at 50% 0%, #0d0a20 0%, #070514 50%, #020108 100%);
+      min-height: 100dvh;
+      background: linear-gradient(180deg, #020111 0%, #0a0a2e 25%, #0d1137 45%, #0a0a2e 70%, #050520 100%);
       font-family: -apple-system, 'SF Pro Display', 'Helvetica Neue', sans-serif;
       color: #fff;
       overflow-x: hidden;
@@ -51,25 +60,34 @@
     .header .status-dot.offline { background: #444; animation: none; }
 
 
-    /* ── Dream Wall ── */
+    /* ── Dream Wall (tile flow) ── */
     .dream-wall {
-      max-width: 700px;
-      margin: 0 auto;
+      width: 100%;
       position: relative;
       z-index: 2;
       min-height: 60vh;
+      display: flex;
+      flex-wrap: wrap;
+      align-content: flex-start;
+      gap: 10px;
+      padding: 0 4px;
     }
 
     .dream-card {
-      background: rgba(255,255,255,0.03);
-      border: 1px solid rgba(255,255,255,0.06);
-      border-radius: 20px;
-      padding: 22px 24px;
-      margin-bottom: 14px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px;
+      padding: 14px 16px 12px;
       backdrop-filter: blur(10px);
-      animation: cardIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+      animation: cardIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
       opacity: 0;
-      transform: translateY(30px);
+      transform: translateY(20px);
+      flex-shrink: 0;
+      max-width: 90%;
+      transition: background 0.3s;
+    }
+    .dream-card:hover {
+      background: rgba(255,255,255,0.07);
     }
 
     @keyframes cardIn {
@@ -77,35 +95,47 @@
     }
 
     .dream-card .dream-emoji {
-      font-size: 28px;
-      margin-bottom: 8px;
+      font-size: 22px;
+      margin-bottom: 4px;
     }
     .dream-card .dream-text {
-      font-size: 20px;
+      font-size: 17px;
       line-height: 1.5;
-      color: rgba(255,255,255,0.9);
+      color: rgba(255,255,255,0.85);
       font-weight: 400;
       word-break: break-word;
     }
+    .dream-card .dream-text .word-pair {
+      display: inline-block;
+      margin-right: 6px;
+      margin-bottom: 2px;
+    }
+    .dream-card .dream-meta {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-top: 6px;
+    }
     .dream-card .dream-time {
-      font-size: 12px;
+      font-size: 11px;
       color: rgba(255,255,255,0.2);
-      margin-top: 10px;
-      letter-spacing: 1px;
+      letter-spacing: 0.5px;
     }
     .dream-card .dream-id {
-      display: inline-block;
-      font-size: 11px;
+      font-size: 10px;
       color: rgba(255,255,255,0.1);
-      margin-top: 4px;
       font-family: monospace;
     }
 
     /* ── Empty State ── */
     .empty-state {
+      width: 100%;
       text-align: center;
       padding: 80px 20px;
       color: rgba(255,255,255,0.15);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
     .empty-state .icon { font-size: 48px; margin-bottom: 16px; }
     .empty-state p { font-size: 16px; line-height: 1.6; }
@@ -117,7 +147,6 @@
       width: 100%; height: 100%;
       pointer-events: none;
       z-index: 0;
-      opacity: 0.3;
     }
 
     /* ── Responsive ── */
@@ -131,6 +160,11 @@
 <body>
   <canvas id="bgCanvas"></canvas>
 
+  <!-- Spark burst overlay -->
+  <div id="presentSparkWrap" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:999;pointer-events:none;">
+    <canvas id="presentSparkCanvas" style="width:100%;height:100%;display:block;"></canvas>
+  </div>
+
   <div class="header">
     <h1>✨ dream feed ✨</h1>
     <div class="stats">
@@ -143,6 +177,11 @@
     </div>
   </div>
 
+  <!-- Install button (hidden by default, shown by beforeinstallprompt) -->
+  <div style="text-align:center;position:relative;z-index:2;margin-top:-10px">
+    <button id="installBtn" style="display:none;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#fff;padding:10px 24px;border-radius:12px;font-size:14px;cursor:pointer;font-family:inherit;letter-spacing:1px;" onclick="installPWA()">📲 Install App</button>
+  </div>
+
   <div class="dream-wall" id="dreamWall">
     <div class="empty-state" id="emptyState">
       <div class="icon">🕯️</div>
@@ -153,34 +192,153 @@
 
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
   <script>
-    // ── Background particles ──
-    const canvas = document.getElementById('bgCanvas');
-    const ctx = canvas.getContext('2d');
+    // ── Night Sky Stars (static, no blinking) ──
+    const bgCanvas = document.getElementById('bgCanvas');
+    const bgCtx = bgCanvas.getContext('2d');
     let W, H;
-    function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
-    resize(); window.addEventListener('resize', resize);
+    const stars = [];
 
-    const particles = Array.from({length: 30}, () => ({
-      x: Math.random() * W, y: Math.random() * H,
-      speedY: -(Math.random() * 0.5 + 0.2),
-      speedX: (Math.random() - 0.5) * 0.2,
-      size: Math.random() * 2 + 0.5,
-      opacity: Math.random() * 0.3 + 0.05
-    }));
-
-    function animate() {
-      ctx.clearRect(0, 0, W, H);
-      for (const p of particles) {
-        p.y += p.speedY; p.x += p.speedX;
-        if (p.y < -10) { p.y = H + 10; p.x = Math.random() * W; }
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255,200,150,${p.opacity})`;
-        ctx.fill();
+    function generateStars() {
+      W = bgCanvas.width = window.innerWidth;
+      H = bgCanvas.height = window.innerHeight;
+      stars.length = 0;
+      // Dense starfield — more small dim stars, fewer bright ones
+      const density = Math.floor((W * H) / 800);
+      for (let i = 0; i < density; i++) {
+        const brightness = Math.random();
+        let size, opacity;
+        if (brightness > 0.98) {
+          // Rare bright stars
+          size = 1.8 + Math.random() * 1.2;
+          opacity = 0.7 + Math.random() * 0.3;
+        } else if (brightness > 0.9) {
+          // Medium stars
+          size = 1.0 + Math.random() * 0.8;
+          opacity = 0.4 + Math.random() * 0.3;
+        } else {
+          // Tiny dim stars (majority)
+          size = 0.4 + Math.random() * 0.6;
+          opacity = 0.15 + Math.random() * 0.25;
+        }
+        // Slight color variation: cool white to warm yellow
+        const temp = Math.random();
+        let r, g, b;
+        if (temp < 0.15) {
+          // Blue-white stars
+          r = 200; g = 210; b = 255;
+        } else if (temp < 0.3) {
+          // Warm yellow stars
+          r = 255; g = 240; b = 200;
+        } else {
+          // White stars
+          r = 255; g = 255; b = 255;
+        }
+        stars.push({
+          x: Math.random() * W,
+          y: Math.random() * H,
+          size, opacity, r, g, b
+        });
       }
-      requestAnimationFrame(animate);
     }
-    animate();
+
+    function drawStars() {
+      bgCtx.clearRect(0, 0, W, H);
+      for (const s of stars) {
+        bgCtx.beginPath();
+        bgCtx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+        bgCtx.fillStyle = `rgba(${s.r},${s.g},${s.b},${s.opacity})`;
+        bgCtx.fill();
+        // Subtle glow for brighter stars
+        if (s.size > 1.2) {
+          bgCtx.beginPath();
+          bgCtx.arc(s.x, s.y, s.size * 3, 0, Math.PI * 2);
+          bgCtx.fillStyle = `rgba(${s.r},${s.g},${s.b},${s.opacity * 0.08})`;
+          bgCtx.fill();
+        }
+      }
+    }
+
+    generateStars();
+    drawStars();
+    window.addEventListener('resize', () => { generateStars(); drawStars(); });
+
+    // ── Spark Burst Effect ──
+    function burstSpark(text, cx, cy) {
+      const c = document.getElementById('presentSparkCanvas');
+      const W = window.innerWidth, H = window.innerHeight;
+      c.width = W; c.height = H;
+      const ctx = c.getContext('2d');
+      if (cx === undefined) cx = W / 2;
+      if (cy === undefined) cy = H / 2;
+
+      if (window._pRaf) cancelAnimationFrame(window._pRaf);
+      if (window._pTimer) clearTimeout(window._pTimer);
+
+      let h = 0;
+      for (let i = 0; i < text.length; i++) h = text.charCodeAt(i) + ((h << 5) - h);
+      const warmHues = [25, 35, 45, 50, 55, 320, 340, 350, 15, 30];
+      const hue = warmHues[Math.abs(h) % warmHues.length];
+
+      const particles = [];
+      const count = 100;
+      const startTime = performance.now();
+
+      for (let i = 0; i < count; i++) {
+        const angle = Math.random() * 2 * Math.PI;
+        const dist = 40 + Math.random() * Math.max(W, H) * 0.5;
+        const size = 1.5 + Math.random() * 4;
+        const life = 0.5 + Math.random() * 0.8;
+        const colors = ['#fff', `hsl(${hue+20*Math.random()},85%,85%)`, `hsl(${hue},85%,60%)`, `hsl(${hue-15},85%,70%)`];
+        particles.push({
+          x: cx, y: cy,
+          tx: cx + Math.cos(angle) * dist,
+          ty: cy + Math.sin(angle) * dist,
+          mx: cx + Math.cos(angle) * dist * 0.3,
+          my: cy + Math.sin(angle) * dist * 0.3,
+          size, life, age: 0,
+          color: colors[i % colors.length]
+        });
+      }
+
+      document.getElementById('presentSparkWrap').style.display = 'block';
+
+      function anim(now) {
+        const elapsed = (now - startTime) / 1000;
+        if (elapsed > 5) {
+          ctx.clearRect(0, 0, W, H);
+          document.getElementById('presentSparkWrap').style.display = 'none';
+          return;
+        }
+        ctx.clearRect(0, 0, W, H);
+        for (const p of particles) {
+          p.age += 0.016;
+          const t = Math.min(p.age / p.life, 1);
+          const ease = 1 - Math.pow(1 - t, 1.6);
+          const u = 1 - ease;
+          const x = u*u*cx + 2*u*ease*p.mx + ease*ease*p.tx;
+          const y = u*u*cy + 2*u*ease*p.my + ease*ease*p.ty;
+          const alpha = Math.max(0, 1 - t * 1.4);
+          const s = p.size * (1 - t * 0.4);
+          if (alpha <= 0) continue;
+          ctx.shadowColor = p.color;
+          ctx.shadowBlur = s * 6;
+          ctx.beginPath();
+          ctx.arc(x, y, s, 0, Math.PI * 2);
+          ctx.fillStyle = p.color;
+          ctx.globalAlpha = alpha;
+          ctx.fill();
+          ctx.shadowBlur = 0;
+        }
+        ctx.globalAlpha = 1;
+        window._pRaf = requestAnimationFrame(anim);
+      }
+      window._pRaf = requestAnimationFrame(anim);
+      window._pTimer = setTimeout(() => {
+        cancelAnimationFrame(window._pRaf);
+        ctx.clearRect(0, 0, W, H);
+        document.getElementById('presentSparkWrap').style.display = 'none';
+      }, 5000);
+    }
 
     // ── Dream Wall ──
     const dreamWall = document.getElementById('dreamWall');
@@ -195,6 +353,17 @@
       '✨':'✨','🌟':'🌟','💫':'💫','⭐':'⭐','🔥':'🔥',
       '🌙':'🌙','🕯️':'🕯️','💭':'💭','🌈':'🌈','❤️':'❤️'
     };
+
+    // Format text: max 20 words, 2 words per line
+    function formatText(text) {
+      const words = text.trim().split(/\s+/).filter(w => w.length > 0).slice(0, 20);
+      let html = '';
+      for (let i = 0; i < words.length; i += 2) {
+        const pair = words.slice(i, i + 2).join(' ');
+        html += `<span class="word-pair">${pair}</span>`;
+      }
+      return html;
+    }
 
     function timeAgo(ts) {
       const sec = Math.floor((Date.now() - ts) / 1000);
@@ -215,9 +384,11 @@
 
       card.innerHTML = `
         <div class="dream-emoji">${emoji}</div>
-        <div class="dream-text">${dream.text}</div>
-        <div class="dream-time">${timeAgo(dream.timestamp)}</div>
-        <div class="dream-id">#${dream.id}</div>
+        <div class="dream-text">${formatText(dream.text)}</div>
+        <div class="dream-meta">
+          <span class="dream-time">${timeAgo(dream.timestamp)}</span>
+          <span class="dream-id">#${dream.id}</span>
+        </div>
       `;
 
       dreamWall.prepend(card);
@@ -236,7 +407,7 @@
     }
 
     // ── Socket.io ──
-    const socket = io('https://api.koli.emyx.us:3003', { transports: ['websocket', 'polling'] });
+    const socket = io('https://api.dream2be.emyx.us:3003', { transports: ['websocket', 'polling'] });
 
     socket.on('connect', () => {
       statusDot.className = 'status-dot';
@@ -252,6 +423,7 @@
     // Receive dream
     socket.on('new-dream', (dream) => {
       addDream(dream);
+      burstSpark(dream.text, window.innerWidth / 2, window.innerHeight / 2);
     });
 
     socket.on('vote-update', (data) => {
@@ -261,7 +433,7 @@
 
     // Catch up on history
     socket.on('connect', () => {
-      fetch('https://api.koli.emyx.us:3003/dreams')
+      fetch('https://api.dream2be.emyx.us:3003/dreams')
         .then(r => r.json())
         .then(data => {
           if (data.success && data.dreams) {
@@ -279,6 +451,35 @@
       liveCountEl.textContent = stats.presenters + ' watching';
     });
 
+    // ── PWA Install ──
+    let deferredPrompt = null;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      console.log('📱 Install prompt ready');
+      // Show install button
+      const btn = document.getElementById('installBtn');
+      if (btn) btn.style.display = 'inline-block';
+    });
+
+    window.addEventListener('appinstalled', () => {
+      console.log('📱 PWA installed');
+      const btn = document.getElementById('installBtn');
+      if (btn) btn.textContent = '✓ Installed';
+    });
+
+    function installPWA() {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(choice => {
+          console.log('📱 Install choice:', choice.outcome);
+          deferredPrompt = null;
+          const btn = document.getElementById('installBtn');
+          if (btn) btn.style.display = 'none';
+        });
+      }
+    }
+
 
     // Update timestamps every 30s
     setInterval(() => {
@@ -292,6 +493,12 @@
         }
       });
     }, 30000);
+  </script>
+  <!-- Service Worker -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/present-sw.js').then(r => console.log('SW registered', r.scope)).catch(e => console.error('SW failed', e));
+    }
   </script>
 </body>
 </html>

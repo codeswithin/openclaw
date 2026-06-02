@@ -4,13 +4,21 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
   <title>dream2be</title>
+  <meta name="description" content="Light your dream and watch it soar">
+  <meta name="theme-color" content="#ff6622">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="dream2be">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
+    html, body {
+      height: 100%;
+    }
     body {
-      min-height: 100vh;
-      min-height: 100dvh;
-      min-height: -webkit-fill-available;
       background: radial-gradient(ellipse at 50% 0%, #141028 0%, #0b091a 60%, #05040e 100%);
       display: flex;
       justify-content: center;
@@ -19,6 +27,8 @@
       padding: 16px;
       overflow-x: hidden;
       color: #fff;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
     }
 
 
@@ -297,36 +307,23 @@
       100% { transform: scale(1); }
     }
 
-    /* ── Dream Spark ── */
+    /* ── Dream Spark Overlay (Canvas) ── */
     .spark-wrap {
       display: none;
-      justify-content: center;
-      align-items: center;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 100;
+      pointer-events: none;
     }
     .spark-wrap.show {
-      display: flex;
+      display: block;
     }
-    .spark-wrap svg {
-      width: 300px;
-      height: 300px;
-      filter: drop-shadow(0 0 50px rgba(255,180,80,0.4));
-      animation: sparkFloat 4s ease-in-out infinite;
-    }
-    @keyframes sparkFloat {
-      0%, 100% { transform: translateY(0) scale(1); }
-      50% { transform: translateY(-12px) scale(1.02); }
-    }
-    .spark-burst {
-      animation: burstIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-    }
-    @keyframes burstIn {
-      0% { transform: scale(0); opacity: 0; }
-      60% { transform: scale(1.15); opacity: 1; }
-      100% { transform: scale(1); opacity: 1; }
-    }
-    .spark-burst-finish {
-      /* after burst, let sparkFloat take over */
-      animation: sparkFloat 4s ease-in-out infinite;
+    .spark-wrap canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
     }
 
     /* ── Success Message ── */
@@ -410,7 +407,7 @@
 
     <!-- Input -->
     <div class="input-wrap">
-      <textarea id="dreamInput" placeholder="Type your dream..." maxlength="300" autofocus></textarea>
+      <textarea id="dreamInput" placeholder="Type your dream (max 20 words)..." maxlength="200" autofocus></textarea>
     </div>
 
     <!-- CTA Button -->
@@ -421,25 +418,9 @@
     <!-- Success Message -->
     <div class="success-msg" id="successMsg"></div>
 
-    <!-- Dream Spark (SVG) -->
+    <!-- Dream Spark Overlay (Canvas) -->
     <div class="spark-wrap" id="sparkWrap">
-      <svg id="dreamSpark" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <radialGradient id="coreGlow" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stop-color="#fff" stop-opacity="0.9"/>
-            <stop offset="40%" stop-color="#ffe8b0" stop-opacity="0.6"/>
-            <stop offset="100%" stop-color="transparent"/>
-          </radialGradient>
-          <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="3" result="blur"/>
-            <feComposite in="SourceGraphic" in2="blur" operator="over"/>
-          </filter>
-        </defs>
-        <!-- Dynamic rays + particles injected by JS -->
-        <g id="sparkGroup">
-          <circle id="sparkHalo" cx="100" cy="100" r="55" fill="url(#coreGlow)" opacity="0.5"/>
-        </g>
-      </svg>
+      <canvas id="sparkBurstCanvas"></canvas>
     </div>
 
     <!-- Phoenix / Fire -->
@@ -539,131 +520,120 @@
     }
 
     // ── Spark Generator ──
-    function hashToHue(text) {
-      let h = 0;
-      for (let i = 0; i < text.length; i++) h = text.charCodeAt(i) + ((h << 5) - h);
-      const warmHues = [25, 35, 45, 50, 55, 320, 340, 350, 15, 30];
-      return warmHues[Math.abs(h) % warmHues.length];
-    }
-
     function renderSpark(dreamText, cx, cy) {
-      if (cx === undefined) cx = 100;
-      if (cy === undefined) cy = 100;
-      const hue = hashToHue(dreamText);
+      // Use canvas for smooth, organic spark burst
+      const c = document.getElementById('sparkBurstCanvas');
+      const W = window.innerWidth, H = window.innerHeight;
+      c.width = W; c.height = H;
+      const ctx = c.getContext('2d');
+      if (cx === undefined) cx = W / 2;
+      if (cy === undefined) cy = H / 2;
+
+      // Cancel previous animation
+      if (window._sparkRaf) cancelAnimationFrame(window._sparkRaf);
+      if (window._sparkTimer) clearTimeout(window._sparkTimer);
+
+      // Generate spark hue from dream text
+      let h = 0;
+      for (let i = 0; i < dreamText.length; i++) h = dreamText.charCodeAt(i) + ((h << 5) - h);
+      const warmHues = [25, 35, 45, 50, 55, 320, 340, 350, 15, 30];
+      const hue = warmHues[Math.abs(h) % warmHues.length];
       const sat = 88 + Math.abs(dreamText.length * 7) % 10;
-      const light = 62 + Math.abs(dreamText.charCodeAt(0) * 3) % 15;
-      const color = `hsl(${hue}, ${sat}%, ${light}%)`;
-      const bright = `hsl(${hue}, ${sat}%, 92%)`;
-      const glow = `hsl(${hue}, ${sat}%, 70%)`;
 
-      const svg = document.getElementById('dreamSpark');
-      const group = document.getElementById('sparkGroup');
-      group.querySelectorAll('.dyn').forEach(el => el.remove());
-      const ns = 'http://www.w3.org/2000/svg';
+      // Particle system
+      const particles = [];
+      const count = 150;
+      const startTime = performance.now();
 
-      // Apply burst animation
-      svg.classList.remove('spark-burst', 'spark-burst-finish');
-      void svg.getBoundingClientRect();
-      svg.classList.add('spark-burst');
-      setTimeout(() => {
-        svg.classList.remove('spark-burst');
-        svg.classList.add('spark-burst-finish');
-      }, 650);
+      for (let i = 0; i < count; i++) {
+        const angle = Math.random() * 2 * Math.PI;
+        const speed = 2 + Math.random() * 10;
+        const dist = 40 + Math.random() * Math.max(W, H) * 0.55;
+        const size = 1.5 + Math.random() * 5;
+        const life = 0.5 + Math.random() * 0.9;
+        const colors = ['#fff', `hsl(${hue+20*Math.random()},${sat}%,85%)`, `hsl(${hue},${sat}%,60%)`, `hsl(${hue-15},${sat}%,70%)`];
+        particles.push({
+          x: cx, y: cy,
+          tx: cx + Math.cos(angle) * dist,
+          ty: cy + Math.sin(angle) * dist,
+          mx: cx + Math.cos(angle) * dist * 0.3,
+          my: cy + Math.sin(angle) * dist * 0.3,
+          size, life, age: 0,
+          color: colors[i % colors.length]
+        });
+      }
 
-      // Helper to create SVG animate elements
-      const anim = (attrs) => {
-        const el = document.createElementNS(ns, 'animate');
-        for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
-        return el;
-      };
+      // Big bright glow cores
+      for (let i = 0; i < 8; i++) {
+        const angle = Math.random() * 2 * Math.PI;
+        const dist = 5 + Math.random() * 30;
+        particles.push({
+          x: cx, y: cy,
+          tx: cx + Math.cos(angle) * dist,
+          ty: cy + Math.sin(angle) * dist,
+          mx: cx, my: cy,
+          size: 10 + Math.random() * 15, life: 1.3, age: 0,
+          color: '#fff', glow: true
+        });
+      }
 
-      // Outer glow halo
-      const halo = document.createElementNS(ns, 'circle');
-      halo.setAttribute('cx',cx); halo.setAttribute('cy',cy); halo.setAttribute('r','65');
-      halo.setAttribute('fill', 'url(#coreGlow)'); halo.setAttribute('opacity','0.7');
-      halo.classList.add('dyn');
-      halo.appendChild(anim({ attributeName:'r', values:'55;75;55', dur:'3s', repeatCount:'indefinite' }));
-      halo.appendChild(anim({ attributeName:'opacity', values:'0.4;0.8;0.4', dur:'3s', repeatCount:'indefinite' }));
-      group.appendChild(halo);
-
-      // Big bright core
-      const core = document.createElementNS(ns, 'circle');
-      core.setAttribute('cx',cx); core.setAttribute('cy',cy); core.setAttribute('r','8');
-      core.setAttribute('fill', '#fff'); core.classList.add('dyn');
-      core.appendChild(anim({ attributeName:'r', values:'5;12;5', dur:'1.2s', repeatCount:'indefinite' }));
-      group.appendChild(core);
-
-      // Mid ring
-      const ring = document.createElementNS(ns, 'circle');
-      ring.setAttribute('cx',cx); ring.setAttribute('cy',cy);
-      ring.setAttribute('r','24'); ring.setAttribute('fill','none');
-      ring.setAttribute('stroke', bright); ring.setAttribute('stroke-width','3');
-      ring.setAttribute('opacity','0.6'); ring.classList.add('dyn');
-      ring.appendChild(anim({ attributeName:'r', values:'18;30;18', dur:'2s', repeatCount:'indefinite' }));
-      ring.appendChild(anim({ attributeName:'opacity', values:'0.3;0.7;0.3', dur:'2s', repeatCount:'indefinite' }));
-      group.appendChild(ring);
-
-      // Outer ring
-      const ring2 = document.createElementNS(ns, 'circle');
-      ring2.setAttribute('cx',cx); ring2.setAttribute('cy',cy);
-      ring2.setAttribute('r','42'); ring2.setAttribute('fill','none');
-      ring2.setAttribute('stroke', color); ring2.setAttribute('stroke-width','1.5');
-      ring2.setAttribute('opacity','0.3'); ring2.classList.add('dyn');
-      ring2.appendChild(anim({ attributeName:'r', values:'35;50;35', dur:'3s', repeatCount:'indefinite' }));
-      ring2.appendChild(anim({ attributeName:'opacity', values:'0.15;0.4;0.15', dur:'3s', repeatCount:'indefinite' }));
-      group.appendChild(ring2);
-
-      // 12 rays
-      for (let i = 0; i < 12; i++) {
-        const a = i * 30 * Math.PI / 180;
-        const x1 = cx + Math.cos(a) * 22, y1 = cy + Math.sin(a) * 22;
-        const x2 = cx + Math.cos(a) * 70, y2 = cy + Math.sin(a) * 70;
-        const line = document.createElementNS(ns, 'line');
-        line.setAttribute('x1',x1); line.setAttribute('y1',y1);
-        line.setAttribute('x2',x2); line.setAttribute('y2',y2);
-        line.setAttribute('stroke', color); line.setAttribute('stroke-width','3');
-        line.setAttribute('stroke-linecap','round'); line.setAttribute('opacity','0.7');
-        line.classList.add('dyn');
-        line.appendChild(anim({ attributeName:'opacity', values:'0.15;0.85;0.15', dur:`${1.8+(i%4)*0.6}s`, repeatCount:'indefinite' }));
-        group.appendChild(line);
-
-        // Dot at tip
-        const dot = document.createElementNS(ns, 'circle');
-        dot.setAttribute('cx',x2); dot.setAttribute('cy',y2); dot.setAttribute('r','4');
-        dot.setAttribute('fill', bright); dot.classList.add('dyn');
-        dot.setAttribute('filter','url(#glow)');
-        dot.appendChild(anim({ attributeName:'opacity', values:'0.1;1;0.1', dur:`${1+(i%5)*0.3}s`, repeatCount:'indefinite' }));
-        dot.appendChild(anim({ attributeName:'r', values:'2;5;2', dur:`${1.5+(i%3)*0.5}s`, repeatCount:'indefinite' }));
-        group.appendChild(dot);
-
-        // Inner glow dot midway
-        if (i % 2 === 0) {
-          const mx = cx + Math.cos(a) * 40, my = cy + Math.sin(a) * 40;
-          const md = document.createElementNS(ns, 'circle');
-          md.setAttribute('cx',mx); md.setAttribute('cy',my); md.setAttribute('r','2.5');
-          md.setAttribute('fill', glow); md.classList.add('dyn');
-          md.appendChild(anim({ attributeName:'opacity', values:'0;0.6;0', dur:`${1.2+(i%4)*0.5}s`, repeatCount:'indefinite' }));
-          group.appendChild(md);
+      function animLoop(now) {
+        const elapsed = (now - startTime) / 1000;
+        if (elapsed > 5) {
+          ctx.clearRect(0, 0, W, H);
+          return;
         }
+
+        ctx.clearRect(0, 0, W, H);
+
+        for (const p of particles) {
+          p.age += 0.016;
+          const t = Math.min(p.age / p.life, 1);
+          const ease = 1 - Math.pow(1 - t, 1.6);
+
+          // Quadratic bezier: cx,cy → mx,my → tx,ty
+          const u = 1 - ease;
+          const x = u*u*cx + 2*u*ease*p.mx + ease*ease*p.tx;
+          const y = u*u*cy + 2*u*ease*p.my + ease*ease*p.ty;
+          const alpha = Math.max(0, 1 - t * 1.4);
+          const s = p.size * (1 - t * 0.4);
+
+          if (alpha <= 0) continue;
+
+          if (p.glow) {
+            const grad = ctx.createRadialGradient(x, y, 0, x, y, s * 4);
+            grad.addColorStop(0, `rgba(255,255,255,${alpha * 0.7})`);
+            grad.addColorStop(0.3, `rgba(255,200,150,${alpha * 0.25})`);
+            grad.addColorStop(1, 'transparent');
+            ctx.beginPath();
+            ctx.arc(x, y, s * 4, 0, Math.PI * 2);
+            ctx.fillStyle = grad;
+            ctx.fill();
+          }
+
+          // Spark with glow trail
+          ctx.shadowColor = p.color;
+          ctx.shadowBlur = s * 6;
+          ctx.beginPath();
+          ctx.arc(x, y, s, 0, Math.PI * 2);
+          ctx.fillStyle = p.color;
+          ctx.globalAlpha = alpha;
+          ctx.fill();
+          ctx.shadowBlur = 0;
+        }
+
+        ctx.globalAlpha = 1;
+        window._sparkRaf = requestAnimationFrame(animLoop);
       }
 
-      // 25 floating particles
-      for (let i = 0; i < 25; i++) {
-        const a = Math.random() * 360, d = 25 + Math.random() * 75;
-        const r2 = a * Math.PI / 180;
-        const px = cx + Math.cos(r2) * d, py = cy + Math.sin(r2) * d;
-        const sz = 2 + Math.random() * 4;
-        const p = document.createElementNS(ns, 'circle');
-        p.setAttribute('cx',px); p.setAttribute('cy',py); p.setAttribute('r',sz);
-        p.setAttribute('fill', i % 4 === 0 ? '#fff' : i % 3 === 0 ? bright : color);
-        p.classList.add('dyn');
-        const dx = (Math.random() - 0.5) * 35, dy = -(Math.random() * 28 + 6);
-        const dur = 2.5 + Math.random() * 3.5;
-        p.appendChild(anim({ attributeName:'cy', values:`${py};${py+dy};${py}`, dur:`${dur}s`, repeatCount:'indefinite' }));
-        p.appendChild(anim({ attributeName:'cx', values:`${px};${px+dx};${px}`, dur:`${dur}s`, repeatCount:'indefinite' }));
-        p.appendChild(anim({ attributeName:'opacity', values:'0;0.8;0', dur:`${1.5+Math.random()*2}s`, repeatCount:'indefinite' }));
-        group.appendChild(p);
-      }
+      window._sparkRaf = requestAnimationFrame(animLoop);
+
+      // Auto-cleanup
+      window._sparkTimer = setTimeout(() => {
+        cancelAnimationFrame(window._sparkRaf);
+        ctx.clearRect(0, 0, W, H);
+        document.getElementById('sparkWrap').classList.remove('show');
+      }, 5000);
     }
 
     // ── Core Logic ──
@@ -742,6 +712,18 @@
       });
     }
 
+    // Word limit (max 20 words)
+    const MAX_WORDS = 20;
+    dreamInput.addEventListener('input', () => {
+      const words = dreamInput.value.trim().split(/\s+/).filter(w => w.length > 0);
+      if (words.length > MAX_WORDS) {
+        const trimmed = words.slice(0, MAX_WORDS).join(' ');
+        dreamInput.value = trimmed;
+      }
+      const remaining = MAX_WORDS - dreamInput.value.trim().split(/\s+/).filter(w => w.length > 0).length;
+      dreamInput.style.borderColor = remaining <= 3 ? 'rgba(255,100,80,0.5)' : '';
+    });
+
     // Enter key (Shift+Enter for newline, plain Enter to submit)
     dreamInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) {
@@ -756,7 +738,7 @@
     // Connect to dream server
     let dreamSocket = null;
     try {
-      dreamSocket = io('https://api.koli.emyx.us:3003', { transports: ['websocket', 'polling'] });
+      dreamSocket = io('https://api.dream2be.emyx.us:3003', { transports: ['websocket', 'polling'] });
       dreamSocket.on('connect', () => {
         console.log('📡 Connected to dream server');
         dreamSocket.emit('identify', 'submitter');
@@ -775,6 +757,12 @@
         dreamSocket.emit('dream', { text: dreamText, emoji: emoji });
       }
       return emoji;
+    }
+  </script>
+  <!-- Service Worker -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').then(r => console.log('SW registered', r.scope));
     }
   </script>
 </body>
