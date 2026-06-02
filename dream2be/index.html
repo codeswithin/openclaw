@@ -857,13 +857,7 @@
       dreamInput.style.borderColor = remaining <= 3 ? 'rgba(255,100,80,0.5)' : '';
     });
 
-    // Enter key (Shift+Enter for newline, plain Enter to submit — via confirmation)
-    dreamInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        lightBtn.click();
-      }
-    });
+    // Enter inserts newline (default textarea behavior). Submission is button-only.
 
     // Keyboard support for confirmation modal
     document.addEventListener('keydown', (e) => {
