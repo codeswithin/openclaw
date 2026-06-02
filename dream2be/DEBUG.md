@@ -28,3 +28,22 @@ Useful for:
 - Verifying real-time latency (compare the timestamp against your watch)
 - Tracking dream ordering / dropped packets
 - Testing / QA on the live feed
+
+---
+
+# Vision Board (Presenter Page)
+
+Dreams appear as glowing vision-board cards with:
+- A **large glow icon** next to card text
+- **Colored glow** based on the dream text content (hue generated from text hash)
+- **Multiline support** — submitter can use Shift+Enter for line breaks; presenter renders them as `<span>` lines with glow
+- **Star background** — canvas-drawn starfield with dense tiny dim stars and occasional bright ones
+- **Floating dot decorations** — 8 small colored glow dots scattered around the vision board with subtle drift animation
+
+## Colors
+
+Each dream card gets a unique hue (from a palette of 12 hues) based on hashing the dream text. This creates a varied, colorful vision board.
+
+## Server
+
+The server preserves newlines in dream text while enforcing a 20-word cap. See `dream-server.js` socket.on('dream') handler.
