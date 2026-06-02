@@ -530,6 +530,132 @@
       }
     }
 
+    // ── Spark Generator ──
+    function hashToHue(text) {
+      let h = 0;
+      for (let i = 0; i < text.length; i++) h = text.charCodeAt(i) + ((h << 5) - h);
+      const warmHues = [25, 35, 45, 50, 55, 320, 340, 350, 15, 30];
+      return warmHues[Math.abs(h) % warmHues.length];
+    }
+
+    function renderSpark(dreamText) {
+      const hue = hashToHue(dreamText);
+      const sat = 88 + Math.abs(dreamText.length * 7) % 10;
+      const light = 62 + Math.abs(dreamText.charCodeAt(0) * 3) % 15;
+      const color = `hsl(${hue}, ${sat}%, ${light}%)`;
+      const bright = `hsl(${hue}, ${sat}%, 92%)`;
+      const glow = `hsl(${hue}, ${sat}%, 70%)`;
+
+      const svg = document.getElementById('dreamSpark');
+      const group = document.getElementById('sparkGroup');
+      group.querySelectorAll('.dyn').forEach(el => el.remove());
+      const ns = 'http://www.w3.org/2000/svg';
+
+      // Apply burst animation
+      svg.classList.remove('spark-burst', 'spark-burst-finish');
+      void svg.getBoundingClientRect();
+      svg.classList.add('spark-burst');
+      setTimeout(() => {
+        svg.classList.remove('spark-burst');
+        svg.classList.add('spark-burst-finish');
+      }, 650);
+
+      // Helper to create SVG animate elements
+      const anim = (attrs) => {
+        const el = document.createElementNS(ns, 'animate');
+        for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+        return el;
+      };
+
+      // Outer glow halo
+      const halo = document.createElementNS(ns, 'circle');
+      halo.setAttribute('cx','100'); halo.setAttribute('cy','100'); halo.setAttribute('r','65');
+      halo.setAttribute('fill', 'url(#coreGlow)'); halo.setAttribute('opacity','0.7');
+      halo.classList.add('dyn');
+      halo.appendChild(anim({ attributeName:'r', values:'55;75;55', dur:'3s', repeatCount:'indefinite' }));
+      halo.appendChild(anim({ attributeName:'opacity', values:'0.4;0.8;0.4', dur:'3s', repeatCount:'indefinite' }));
+      group.appendChild(halo);
+
+      // Big bright core
+      const core = document.createElementNS(ns, 'circle');
+      core.setAttribute('cx','100'); core.setAttribute('cy','100'); core.setAttribute('r','8');
+      core.setAttribute('fill', '#fff'); core.classList.add('dyn');
+      core.appendChild(anim({ attributeName:'r', values:'5;12;5', dur:'1.2s', repeatCount:'indefinite' }));
+      group.appendChild(core);
+
+      // Mid ring
+      const ring = document.createElementNS(ns, 'circle');
+      ring.setAttribute('cx','100'); ring.setAttribute('cy','100');
+      ring.setAttribute('r','24'); ring.setAttribute('fill','none');
+      ring.setAttribute('stroke', bright); ring.setAttribute('stroke-width','3');
+      ring.setAttribute('opacity','0.6'); ring.classList.add('dyn');
+      ring.appendChild(anim({ attributeName:'r', values:'18;30;18', dur:'2s', repeatCount:'indefinite' }));
+      ring.appendChild(anim({ attributeName:'opacity', values:'0.3;0.7;0.3', dur:'2s', repeatCount:'indefinite' }));
+      group.appendChild(ring);
+
+      // Outer ring
+      const ring2 = document.createElementNS(ns, 'circle');
+      ring2.setAttribute('cx','100'); ring2.setAttribute('cy','100');
+      ring2.setAttribute('r','42'); ring2.setAttribute('fill','none');
+      ring2.setAttribute('stroke', color); ring2.setAttribute('stroke-width','1.5');
+      ring2.setAttribute('opacity','0.3'); ring2.classList.add('dyn');
+      ring2.appendChild(anim({ attributeName:'r', values:'35;50;35', dur:'3s', repeatCount:'indefinite' }));
+      ring2.appendChild(anim({ attributeName:'opacity', values:'0.15;0.4;0.15', dur:'3s', repeatCount:'indefinite' }));
+      group.appendChild(ring2);
+
+      // 12 rays
+      for (let i = 0; i < 12; i++) {
+        const a = i * 30 * Math.PI / 180;
+        const x1 = 100 + Math.cos(a) * 22, y1 = 100 + Math.sin(a) * 22;
+        const x2 = 100 + Math.cos(a) * 70, y2 = 100 + Math.sin(a) * 70;
+        const line = document.createElementNS(ns, 'line');
+        line.setAttribute('x1',x1); line.setAttribute('y1',y1);
+        line.setAttribute('x2',x2); line.setAttribute('y2',y2);
+        line.setAttribute('stroke', color); line.setAttribute('stroke-width','3');
+        line.setAttribute('stroke-linecap','round'); line.setAttribute('opacity','0.7');
+        line.classList.add('dyn');
+        line.appendChild(anim({ attributeName:'opacity', values:'0.15;0.85;0.15', dur:`${1.8+(i%4)*0.6}s`, repeatCount:'indefinite' }));
+        group.appendChild(line);
+
+        // Dot at tip
+        const dot = document.createElementNS(ns, 'circle');
+        dot.setAttribute('cx',x2); dot.setAttribute('cy',y2); dot.setAttribute('r','4');
+        dot.setAttribute('fill', bright); dot.classList.add('dyn');
+        dot.setAttribute('filter','url(#glow)');
+        dot.appendChild(anim({ attributeName:'opacity', values:'0.1;1;0.1', dur:`${1+(i%5)*0.3}s`, repeatCount:'indefinite' }));
+        dot.appendChild(anim({ attributeName:'r', values:'2;5;2', dur:`${1.5+(i%3)*0.5}s`, repeatCount:'indefinite' }));
+        group.appendChild(dot);
+
+        // Inner glow dot midway
+        if (i % 2 === 0) {
+          const mx = 100 + Math.cos(a) * 40, my = 100 + Math.sin(a) * 40;
+          const md = document.createElementNS(ns, 'circle');
+          md.setAttribute('cx',mx); md.setAttribute('cy',my); md.setAttribute('r','2.5');
+          md.setAttribute('fill', glow); md.classList.add('dyn');
+          md.appendChild(anim({ attributeName:'opacity', values:'0;0.6;0', dur:`${1.2+(i%4)*0.5}s`, repeatCount:'indefinite' }));
+          group.appendChild(md);
+        }
+      }
+
+      // 25 floating particles
+      for (let i = 0; i < 25; i++) {
+        const a = Math.random() * 360, d = 25 + Math.random() * 75;
+        const r2 = a * Math.PI / 180;
+        const px = 100 + Math.cos(r2) * d, py = 100 + Math.sin(r2) * d;
+        const sz = 2 + Math.random() * 4;
+        const p = document.createElementNS(ns, 'circle');
+        p.setAttribute('cx',px); p.setAttribute('cy',py); p.setAttribute('r',sz);
+        p.setAttribute('fill', i % 4 === 0 ? '#fff' : i % 3 === 0 ? bright : color);
+        p.classList.add('dyn');
+        const dx = (Math.random() - 0.5) * 35, dy = -(Math.random() * 28 + 6);
+        const dur = 2.5 + Math.random() * 3.5;
+        p.appendChild(anim({ attributeName:'cy', values:`${py};${py+dy};${py}`, dur:`${dur}s`, repeatCount:'indefinite' }));
+        p.appendChild(anim({ attributeName:'cx', values:`${px};${px+dx};${px}`, dur:`${dur}s`, repeatCount:'indefinite' }));
+        p.appendChild(anim({ attributeName:'opacity', values:'0;0.8;0', dur:`${1.5+Math.random()*2}s`, repeatCount:'indefinite' }));
+        group.appendChild(p);
+      }
+    }
+
     // ── Core Logic ──
     const dreamInput = document.getElementById('dreamInput');
     const lightBtn = document.getElementById('lightBtn');
@@ -568,6 +694,7 @@
 
       // Show themed photo
       document.getElementById('sparkWrap').classList.add('show');
+      renderSpark(dream);
 
       // Intensify particles
       intensifySparks();
